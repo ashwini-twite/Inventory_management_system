@@ -1,0 +1,934 @@
+.ms-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ms-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3e50;
+  margin-bottom: 10px;
+}
+
+.ms-card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 3px 18px rgba(0,0,0,0.07);
+  overflow-x: auto;
+}
+
+/* TABLE */
+.ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ms-table th {
+  background: #f8f9fc;
+  font-weight: 600;
+  padding: 12px;
+  color: #555;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ms-table td {
+  padding: 12px;
+  border-bottom: 1px solid #efefef;
+}
+
+/* Item ID pills */
+.item-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.item-pill {
+  background: #eef3ff;
+  padding: 4px 10px;
+  border-radius: 10px;
+  color: #1a3bb3;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Buttons */
+.ms-btn {
+  padding: 6px 14px;
+  background: #4ca771;
+  border-radius: 8px;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.ms-btn-outline {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #999;
+  background: white;
+  cursor: pointer;
+}
+
+.ms-btn-primary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #3b6af0;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* POPUP */
+.ms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.ms-modal {
+  width: 600px;
+  background: white;
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  animation: popupScale 0.25s ease-out;
+}
+
+.ms-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: #eee;
+  border-radius: 50%;
+  border: none;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.qr-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.qr-box img {
+  width: 100%;
+}
+
+.qr-box p {
+  text-align: center;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.qr-footer {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Animation */
+@keyframes popupScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* ----- STOCK COUNT TABLE COLORS ----- */
+.success {
+  color: #1f8b4d;
+  font-weight: 700;
+}
+
+.danger {
+  color: #c0392b;
+  font-weight: 700;
+}
+
+/* LARGE MODAL FOR BATCH DETAILS */
+.ms-modal-wide {
+  width: 700px;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  animation: popupScale 0.25s ease-out;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.batch-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+
+.batch-title {
+  margin: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ms-table.small td,
+.ms-table.small th {
+  padding: 8px;
+  font-size: 13px;
+}
+/* RESERVED STOCKS TABLE */
+
+.muted {
+  color: #999;
+  font-style: italic;
+}
+
+/* Danger button */
+.ms-btn-danger {
+  background: #d9534f;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+}
+
+.ms-btn-danger:hover {
+  background: #c9302c;
+}
+
+/* POPUP SMALL */
+.ms-modal {
+  width: 420px;
+  background: #fff;
+  padding: 22px;
+  border-radius: 16px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  animation: popupScale 0.25s ease-out;
+}
+
+.modal-textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fafafa;
+  border: 1.5px solid #ddd;
+  font-size: 14px;
+  resize: none;
+}
+
+.modal-buttons {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+/* PAGE */
+.ms-page {
+  padding: 20px;
+  font-family: "Inter", sans-serif;
+}
+
+.ms-title {
+  font-size: 26px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  color: #222;
+}
+
+
+/* BLOCK TITLE */
+.ms-block {
+  margin-bottom: 35px;
+}
+
+.block-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #373737;
+  padding-left: 4px;
+}
+
+/* TABLE */
+.ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.ms-table thead {
+  background: #f5f5f5;
+}
+
+.ms-table th {
+  padding: 14px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  color: #444;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.ms-table td {
+  padding: 12px 10px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Hover row */
+.ms-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* BUTTON */
+.ms-btn {
+  padding: 6px 14px;
+  background: #0073e6;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: 0.2s;
+}
+
+.ms-btn:hover {
+  background: #005bb5;
+  transform: translateY(-1px);
+}
+
+/* POPUP OVERLAY */
+.ms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* POPUP BOX */
+.ms-modal {
+  width: 800px;
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  position: relative;
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ms-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.ms-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* CLOSE BUTTON */
+.popup-close-btn {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-close-btn:hover {
+  background: #d90404;
+  transform: scale(1.1);
+}
+
+/* QR GRID */
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.qr-box {
+  border: 1px solid #eee;
+  padding: 12px;
+  text-align: center;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.qr-box img {
+  width: 130px;
+  height: 130px;
+  margin-bottom: 8px;
+}
+
+.qr-single-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  background: #222;
+  color: #fff;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.qr-single-btn:hover {
+  background: #000;
+}
+
+/* POPUP FOOTER */
+.qr-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: end;
+  gap: 12px;
+}
+.ms-filters {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ms-filters .form-input {
+  width: 200px;
+  max-width: 100%;
+}
+
+.ms-filters button {
+  padding: 8px 12px;
+}
+
+.ms-btn-outline {
+  padding: 8px 16px;
+  border: 1px solid #444;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ms-btn-primary {
+  padding: 8px 16px;
+  background: #0a0a0a;
+  color: white;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+/* TOP TABS */
+.tab-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 10px 18px;
+  border: none;
+  background: #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.tab-btn.active {
+  background: #0073e6;
+  color: white;
+}
+
+.tab-btn:hover {
+  background: #bcbcbc;
+}
+/* ===============================
+   MANAGE STOCK DASHBOARD PAGE
+   =============================== */
+
+.manage-landing {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.manage-landing__header .section-title {
+  margin: 0;
+}
+
+.manage-landing__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.1rem;
+}
+
+.manage-landing__card {
+  border: none;
+  text-align: left;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 1.15rem 1.15rem 1.3rem;
+  box-shadow: 0 18px 38px rgba(29, 55, 125, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.manage-landing__card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 42px rgba(29, 55, 125, 0.12);
+}
+
+.manage-landing__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #eaefff 0%, #d9e2ff 100%);
+  color: #1f2f46;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manage-landing__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1f2f46;
+}
+
+.manage-landing__desc {
+  font-size: 0.95rem;
+  color: #5b6474;
+  line-height: 1.5;
+}
+
+/* ===============================
+   MANAGE STOCK PRODUCTS PAGE
+   =============================== */
+.ms-products-page {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.ms-products-header .section-title {
+  margin: 0 0 0.6rem;
+}
+
+.ms-pill-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ms-pill-tab {
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.4rem;
+  background: #eef2ff;
+  color: #234;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.ms-pill-tab.active {
+  background: linear-gradient(180deg, #3f7bff 0%, #2f67ef 100%);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(63, 123, 255, 0.25);
+}
+
+.ms-pill-tab:hover {
+  transform: translateY(-1px);
+}
+
+.ms-products-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.35rem 1.4rem 1.25rem;
+  box-shadow: 0 22px 48px rgba(28, 61, 138, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ms-products-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ms-products-input {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid #e4e7f0;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  background: #f9fbff;
+}
+
+.ms-products-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.ms-products-btn {
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.ms-products-btn.primary {
+  background: linear-gradient(180deg, #3f7bff 0%, #2f67ef 100%);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(63, 123, 255, 0.25);
+}
+
+.ms-products-btn.ghost {
+  background: #fff;
+  color: #234;
+  border-color: #d8deef;
+}
+
+.ms-products-btn:hover {
+  transform: translateY(-1px);
+}
+
+.ms-products-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ms-products-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px #eff2fb;
+}
+
+.ms-products-table thead {
+  background: #f7f8ff;
+}
+
+.ms-products-table th,
+.ms-products-table td {
+  padding: 0.85rem 0.9rem;
+  text-align: left;
+  font-size: 0.95rem;
+  color: #1f2f46;
+}
+
+.ms-products-table td {
+  color: #3a4557;
+  border-top: 1px solid #f1f3fb;
+}
+
+.ms-products-table tbody tr:hover {
+  background: #f8faff;
+}
+
+.ms-strong {
+  font-weight: 700;
+}
+
+.ms-products-chip {
+  border-radius: 10px;
+  border: 1px solid #d9e2ff;
+  background: #eef3ff;
+  color: #1f2f46;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ms-products-chip.outline {
+  background: #ffffff;
+  border-color: #dfe4ef;
+}
+
+.ms-products-loading {
+  text-align: center;
+  color: #5b6474;
+}
+
+.id-range-click {
+  color: #2f67ef;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .ms-products-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ms-products-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+
+/* ===============================
+   CATEGORY CARD (ItemCategoryCard)
+   =============================== */
+
+.category-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.category-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+}
+
+.category-image {
+  width: 100%;
+  height: 150px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+.category-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.category-description {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4rem;
+}
+
+
+/* SMALL SCREEN FIX */
+@media (max-width: 480px) {
+  .category-image {
+    height: 130px;
+  }
+  .category-title {
+    font-size: 18px;
+  }
+}
+
+/* =======================================
+   FIX: ENABLE SCROLLING IN POPUPS
+   ======================================= */
+
+.ms-modal {
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+/* QR popup scroll */
+.qr-grid {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  padding-right: 5px;
+}
+
+/* ID list scroll */
+.id-list-box {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+}
+
+/* Details list scroll */
+.details-list-box {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+}
+
+/* Prevent popup content from overflowing screen */
+.ms-modal-overlay {
+  align-items: flex-start !important;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+/* ---------------------------------------
+   RESPONSIVE LAYOUT
+--------------------------------------- */
+@media (max-width: 960px) {
+  .ms-page {
+    padding: 14px;
+  }
+
+  .ms-card {
+    padding: 18px;
+  }
+
+  .ms-table th,
+  .ms-table td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .ms-modal,
+  .ms-modal-wide {
+    width: 100%;
+    max-width: 640px;
+  }
+}
+
+@media (max-width: 720px) {
+  .tab-bar {
+    flex-wrap: wrap;
+  }
+
+  .ms-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ms-filters .form-input {
+    width: 100%;
+  }
+
+  .ms-filters button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ms-card {
+    padding: 16px;
+  }
+
+  .ms-title {
+    font-size: 22px;
+  }
+
+  .ms-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 540px) {
+  .ms-page {
+    padding: 12px 10px;
+  }
+
+  .ms-card {
+    padding: 14px;
+  }
+
+  .ms-title {
+    font-size: 20px;
+  }
+
+  .ms-table th,
+  .ms-table td {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
+  .ms-btn,
+  .ms-btn-outline,
+  .ms-btn-danger {
+    width: 100%;
+    text-align: center;
+  }
+
+  .ms-modal,
+  .ms-modal-wide {
+    padding: 18px;
+    max-width: 520px;
+  }
+}
+
+/* ---------------------------------------
+   PAGE SPACING + WIDTH
+--------------------------------------- */
+.ms-page,
+.manage-page {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+@media (max-width: 540px) {
+  .ms-page,
+  .manage-page {
+    padding: 0.9rem;
+  }
+}

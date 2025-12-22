@@ -1,0 +1,265 @@
+/* MAIN WRAPPER */
+.scan-wrapper {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+/* HEADER BAR */
+.scan-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scan-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* SCAN TYPE TOGGLE */
+.scan-toggle button {
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid #2f67ef;
+  background: #eef3ff;
+  color: #2f67ef;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.scan-toggle button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(47, 103, 239, 0.18);
+}
+
+.toggle-active {
+  background: linear-gradient(180deg, #3f7bff 0%, #2f67ef 100%) !important;
+  color: #fff !important;
+  border-color: #2f67ef !important;
+  box-shadow: 0 12px 24px rgba(47, 103, 239, 0.28);
+}
+
+/* MAIN SCAN WHITE BOX */
+.scan-card {
+  margin-top: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* SCAN MODE BUTTONS */
+.scan-mode-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.scan-mode-buttons button {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f7f7ff;
+  cursor: pointer;
+}
+
+.mode-active {
+  background: #4f46e5 !important;
+  color: white !important;
+  border-color: #4f46e5 !important;
+}
+
+/* MANUAL ENTRY */
+.manual-input-wrap {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+}
+
+.manual-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+}
+
+.save-btn {
+  background: #4f46e5;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: white;
+  border: none;
+}
+
+/* CAMERA BOX */
+.camera-box-ui {
+  margin-top: 10px;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+}
+
+/* ✅ FIXED VIDEO PREVIEW */
+.camera-preview {
+  width: 100%;
+  max-width: 350px;
+  height: 280px;
+  background: #000;
+  border-radius: 12px;
+  object-fit: cover;   /* IMPORTANT */
+  display: block;      /* IMPORTANT */
+}
+
+.camera-controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.cam-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f7f7ff;
+}
+
+.cam-btn.blue {
+  background: #4f46e5;
+  color: white;
+}
+
+.camera-note {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #777;
+}
+
+/* PRODUCT CARD */
+.product-card-ui {
+  margin-top: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.prod-field {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background: #f8f8ff;
+  border-radius: 12px;
+}
+
+.prod-field label {
+  font-size: 12px;
+  color: #555;
+}
+
+.prod-field span {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prod-price {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* CLIENT CARD */
+.client-card-ui {
+  margin-top: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.client-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+.client-info {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f7f7ff;
+  border-radius: 12px;
+}
+
+.do-input {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+.client-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.submit-main {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+.reset-main {
+  background: #e6e6e6;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+/* BULK TABLE */
+.bulk-section {
+  margin-top: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.bulk-table-ui {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bulk-table-ui th,
+.bulk-table-ui td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.remove-row {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
