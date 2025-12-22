@@ -1,0 +1,13 @@
+# Frontend
+New folder (2)/node_modules/
+New folder (2)/dist/
+New folder (2)/.env
+
+# Backend
+my_backend/.env
+my_backend/__pycache__/
+my_backend/app/__pycache__/
+
+# General
+.env
+__pycache__/
