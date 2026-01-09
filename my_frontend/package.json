@@ -8,6 +8,7 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "@supabase/supabase-js": "^2.84.0",
     "@zxing/browser": "^0.1.5",
     "file-saver": "^2.0.5",
