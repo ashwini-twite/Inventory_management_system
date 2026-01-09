@@ -9,7 +9,7 @@ export default function StatCard({ label, value, unit, Icon, onClick }) {
       style={{ cursor: onClick ? "pointer" : "default" }}
     >
       <div className="stat-icon">
-        {Icon && <Icon size={32} color="#3f7bff" />}
+        {Icon && <Icon size={32} color="#ffffff" />}
       </div>
 
       <div className="stat-text">

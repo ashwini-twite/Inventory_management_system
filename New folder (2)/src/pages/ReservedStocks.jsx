@@ -1,6 +1,8 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import "../styles/manageStock.css";
+import CategoryPills from "../components/CategoryPills";
+import RowActionsMenu from "../components/RowActionsMenu";
 // import { supabase } from "../supabaseClient"; // REMOVED
 // import { clearReservedSale } from "../services/stockActions"; // REMOVED
 
@@ -11,12 +13,13 @@ export default function ReservedStocks() {
   const [loading, setLoading] = useState(false);
 
   const [searchDraft, setSearchDraft] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   const [reservedRows, setReservedRows] = useState([]);
 
   const [editPopup, setEditPopup] = useState(null);
   const [viewPopup, setViewPopup] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   /* -------------------------------------------------------
       FETCH DATA
@@ -49,33 +52,36 @@ export default function ReservedStocks() {
       FILTER
   ------------------------------------------------------- */
   const filtered = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-
     return (reservedRows || [])
       .filter((row) => {
-        // Backend handles category filter, but we double check if activeTab changes rapidly
+        // 1. Category check
         if (row.category && row.category.toLowerCase() !== activeTab.toLowerCase()) return false;
 
-        if (!term) return true;
+        // 2. Date filter
+        if (dateFilter && row.reservedDate !== dateFilter) return false;
 
-        const haystack = [
-          row.itemId,
-          row.productName,
-          row.batchCode,
-          row.size,
-          row.colour,
-          row.clientName,
-          row.doNumber,
-          row.reservedDate,
-          row.status,
-          row.remarks,
-        ]
-          .join(" ")
-          .toLowerCase();
+        // 3. Universal Search
+        if (searchDraft.trim()) {
+          const parts = searchDraft.toLowerCase().split(/[ ,+]+/).filter(Boolean);
+          const searchableText = [
+            row.itemId,
+            row.productName,
+            row.batchCode,
+            row.size,
+            row.colour,
+            row.clientName,
+            row.doNumber,
+            row.reservedDate,
+            row.status,
+            row.remarks,
+          ].join(" ").toLowerCase();
 
-        return haystack.includes(term);
+          return parts.every(p => searchableText.includes(p));
+        }
+
+        return true;
       });
-  }, [reservedRows, searchTerm, activeTab]);
+  }, [reservedRows, searchDraft, dateFilter, activeTab]);
 
   /* -------------------------------------------------------
       HANDLERS
@@ -171,52 +177,60 @@ export default function ReservedStocks() {
       <h2 className="ms-title">Reserved Stocks</h2>
 
       {/* TABS */}
-      <div className="tab-bar">
-        {["Monuments", "Granite", "Quartz"].map((tab) => (
-          <button
-            key={tab}
-            className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <CategoryPills value={activeTab} onChange={setActiveTab} className="tab-bar" />
 
       <div className="ms-card">
         {/* FILTERS */}
-        <form
-          className="ms-filters"
-          onSubmit={handleSearch}
-          style={{
-            display: "flex",
-            gap: 10,
-            justifyContent: "flex-end",
-          }}
-        >
-          <input
-            className="form-input"
-            type="search"
-            placeholder="Search reserved item..."
-            value={searchDraft}
-            onChange={(e) => setSearchDraft(e.target.value)}
-          />
+        <div className="list-header-row-standard">
+          <div className="list-filters-standard">
+            <div className="search-box-wrapper-standard">
+              <input
+                type="text"
+                className="search-input-standard"
+                placeholder="Search reserved item..."
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+              />
+              {searchDraft && (
+                <button className="search-clear-btn-standard" onClick={() => setSearchDraft("")}>&times;</button>
+              )}
+            </div>
 
-          <button className="ms-btn" type="submit">
-            Search
-          </button>
-
-          <button className="ms-btn-outline" type="button" onClick={clearSearch}>
-            Clear
-          </button>
-        </form>
+            <div className="date-filter-wrapper-standard">
+              <label>Filter by Date:</label>
+              <input
+                type="date"
+                className="date-filter-standard"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              />
+              {dateFilter && (
+                <button className="search-clear-btn-standard" onClick={() => setDateFilter("")}>&times;</button>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* TABLE */}
         {loading ? (
           <p>Loading…</p>
         ) : (
-          <div className="table-wrap">
-            <table className="ms-table">
+          <div className="table-wrap excel-table-wrap">
+            <table className="ms-table excel-table">
+              <colgroup>
+                <col className="excel-col-md" />
+                <col className="excel-col-md" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-md" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-md excel-align-center" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Batch Code</th>
@@ -227,7 +241,7 @@ export default function ReservedStocks() {
                   <th>Colour</th>
                   <th>Client</th>
                   <th>DO</th>
-                  <th>Date</th>
+                  <th className="excel-align-center">Date</th>
                   <th>Status</th>
                   <th>Remarks</th>
                   <th>Actions</th>
@@ -252,29 +266,30 @@ export default function ReservedStocks() {
                       <td>{r.colour}</td>
                       <td>{r.clientName}</td>
                       <td>{r.doNumber}</td>
-                      <td>{r.reservedDate}</td>
+                      <td className="excel-align-center">{r.reservedDate}</td>
                       <td>{r.status}</td>
                       <td>{r.remarks || <span className="muted">None</span>}</td>
 
-                      <td style={{ display: "flex", gap: 6 }}>
-                        <button
-                          className="ms-btn"
-                          onClick={() => openEditPopup(r)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="ms-btn"
-                          onClick={() => setViewPopup(r)}
-                        >
-                          View
-                        </button>
-                        <button
-                          className="ms-btn-danger"
-                          onClick={() => clearReserved(r)}
-                        >
-                          Clear
-                        </button>
+                      <td className="ms-actions-cell">
+                        <RowActionsMenu
+                          id={`ms-reserved-${r.reservedId}`}
+                          openId={openMenuId}
+                          setOpenId={setOpenMenuId}
+                          actions={[
+                            {
+                              label: "Edit",
+                              onClick: () => openEditPopup(r),
+                            },
+                            {
+                              label: "View",
+                              onClick: () => setViewPopup(r),
+                            },
+                            {
+                              label: "Clear",
+                              onClick: () => clearReserved(r),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))

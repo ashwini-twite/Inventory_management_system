@@ -1,10 +1,13 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Download, Printer, SlidersHorizontal } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip as ReTooltip, Legend as ReLegend, ResponsiveContainer } from "recharts";
 import { saveAs } from "file-saver";
 import "../styles/reports.css";
-import { categoryColor, metricColor, neutralRing, normalizeCategory } from "../styles/colorTokens";
+import SelectMenu from "../components/SelectMenu";
+import { categoryColor, normalizeCategory } from "../styles/colorTokens";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 
 const StatusPill = ({ status }) => {
@@ -21,12 +24,12 @@ const StatusPill = ({ status }) => {
 };
 
 const tableStyles = `
-  body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 18px; }
+  body { font-family: "Sora", "Segoe UI", sans-serif; padding: 18px; color: #0f172a; }
   h2 { margin: 0 0 12px; font-size: 18px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border: 1px solid #dfe3ec; padding: 8px 10px; text-align: left; }
-  th { background: #eef3ff; }
-  tr:nth-child(even) td { background: #f8faff; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
+  th { background: #f8fafc; }
+  tr:nth-child(even) td { background: #fafafa; }
 `;
 
 const exportTableToCsv = (rows, columns, filename) => {
@@ -90,6 +93,49 @@ const printTable = (title, columns, rows) => {
   printWindow.print();
 };
 
+const getExcelColumnMeta = (column) => {
+  const rawKey = column?.key ?? "";
+  const rawLabel = column?.label ?? "";
+  const key = `${rawKey} ${rawLabel}`.toLowerCase();
+
+  if (key.includes("date")) {
+    return { widthClass: "excel-col-md", alignClass: "excel-align-center" };
+  }
+
+  if (
+    key.includes("amount") ||
+    key.includes("total") ||
+    key.includes("qty") ||
+    key.includes("quantity") ||
+    key.includes("paid") ||
+    key.includes("balance") ||
+    key.includes("price") ||
+    key.includes("threshold") ||
+    key.includes("available") ||
+    key.includes("sold") ||
+    key.includes("returned")
+  ) {
+    return { widthClass: "excel-col-sm", alignClass: "excel-align-right" };
+  }
+
+  if (key.includes("id") || key.includes("code") || key.includes("invoice")) {
+    return { widthClass: "excel-col-md", alignClass: "" };
+  }
+
+  if (
+    key.includes("product") ||
+    key.includes("client") ||
+    key.includes("vendor") ||
+    key.includes("reason") ||
+    key.includes("notes") ||
+    key.includes("description")
+  ) {
+    return { widthClass: "excel-col-lg", alignClass: "" };
+  }
+
+  return { widthClass: "excel-col-md", alignClass: "" };
+};
+
 const ReportCard = ({
   title,
   description,
@@ -110,6 +156,7 @@ const ReportCard = ({
   onDateChange,
 }) => {
   const [page, setPage] = useState(1);
+  const [pageWindowStart, setPageWindowStart] = useState(1);
   const pageSize = 20;
 
   const stockFilteredRows = useMemo(() => {
@@ -160,10 +207,18 @@ const ReportCard = ({
 
   useEffect(() => {
     setPage(1);
+    setPageWindowStart(1);
   }, [filteredRows.length, searchTerm, stockView, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const safePage = Math.min(page, totalPages);
+  const clampedWindowStart = Math.min(
+    Math.max(1, pageWindowStart),
+    Math.max(1, totalPages - 2)
+  );
+  const windowPages = [0, 1, 2]
+    .map((offset) => clampedWindowStart + offset)
+    .filter((num) => num <= totalPages);
   const pagedRows = filteredRows.slice(
     (safePage - 1) * pageSize,
     safePage * pageSize
@@ -179,18 +234,18 @@ const ReportCard = ({
         <div className="report-card__actions">
           {categoryFilterEnabled && onStockViewChange && (
             <div className="report-card__filter">
-              <select
-                id="report-category-filter"
+              <SelectMenu
                 value={stockView}
-                onChange={(e) => {
-                  onStockViewChange(e.target.value);
-                }}
-              >
-                <option value="all">Show all</option>
-                <option value="monuments">Monuments</option>
-                <option value="granite">Granite</option>
-                <option value="quartz">Quartz</option>
-              </select>
+                onChange={onStockViewChange}
+                className="report-filter-select"
+                options={[
+                  { label: "Show all", value: "all" },
+                  { label: "Monuments", value: "monuments" },
+                  { label: "Granite", value: "granite" },
+                  { label: "Quartz", value: "quartz" },
+                ]}
+                ariaLabel="Report category"
+              />
             </div>
           )}
           <div className="report-search">
@@ -252,27 +307,50 @@ const ReportCard = ({
         </div>
       </header>
 
-      <div className="table-wrap">
-        <table className="table">
+      <div className="table-wrap excel-table-wrap">
+        <table className="table excel-table">
+          <colgroup>
+            {columns.map((col) => {
+              const meta = getExcelColumnMeta(col);
+              return (
+                <col
+                  key={`col-${col.key}`}
+                  className={`${meta.widthClass} ${meta.alignClass}`.trim()}
+                />
+              );
+            })}
+          </colgroup>
           <thead>
             <tr>
-              {columns.map((col) => (
-                <th key={col.key}>{col.label}</th>
-              ))}
+              {columns.map((col) => {
+                const meta = getExcelColumnMeta(col);
+                return (
+                  <th key={col.key} className={meta.alignClass}>
+                    {col.label}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {pagedRows.map((row, idx) => (
               <tr key={`${filename}-${(safePage - 1) * pageSize + idx}`}>
                 {columns.map((col) => {
+                  const meta = getExcelColumnMeta(col);
                   const value =
                     typeof col.render === "function" ? col.render(row) : row[col.key];
-                  return <td key={col.key}>{value ?? "-"}</td>;
+                  return (
+                    <td key={col.key} className={meta.alignClass}>
+                      {value ?? "-"}
+                    </td>
+                  );
                 })}
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="report-card__footer">
         <div className="report-pagination">
           <div className="report-page-info">
             Page {safePage} of {totalPages}
@@ -280,12 +358,15 @@ const ReportCard = ({
           <div className="report-page-buttons">
             <button
               type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => {
+                setPage((p) => Math.max(1, p - 1));
+                setPageWindowStart((start) => Math.max(1, start - 3));
+              }}
               disabled={safePage === 1}
             >
               Prev
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+            {windowPages.map((num) => (
               <button
                 key={num}
                 type="button"
@@ -297,7 +378,12 @@ const ReportCard = ({
             ))}
             <button
               type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => {
+                setPage((p) => Math.min(totalPages, p + 1));
+                setPageWindowStart((start) =>
+                  Math.min(totalPages - 2, start + 3)
+                );
+              }}
               disabled={safePage === totalPages}
             >
               Next
@@ -315,12 +401,22 @@ export default function Reports() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
     setSearchTerm("");
   }, [activeReport]);
 
-
+  useEffect(() => {
+    const stateCategory = location.state?.category;
+    const searchParams = new URLSearchParams(location.search);
+    const queryCategory = searchParams.get("category");
+    const incoming = stateCategory || queryCategory;
+    if (incoming) {
+      setStockView(incoming.toLowerCase());
+      setActiveReport("stock-summary");
+    }
+  }, [location.state, location.search]);
 
 
   const [stockSummary, setStockSummary] = useState([]);
@@ -332,6 +428,37 @@ export default function Reports() {
   const [movementHistory, setMovementHistory] = useState([]);
   const [paymentReport, setPaymentReport] = useState([]);
   const [batchDetail, setBatchDetail] = useState(null);
+
+  const categorySwatch = (key, tone = "base") => categoryColor(key, tone);
+  const mutedColor = "#E5E7EB";
+  const normalizedFilter =
+    stockView === "all" ? "all" : normalizeCategory(stockView);
+  const showAll = normalizedFilter === "all";
+  const fetchStockSummaryData = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/reports/stock-summary`);
+      if (!res.ok) throw new Error("Failed to load stock summary");
+      const data = await res.json();
+      setStockSummary(data);
+    } catch (err) {
+      console.error("Stock summary error:", err);
+    }
+  };
+
+  useEffect(() => {
+    // Stock summary for category & sold charts
+    fetchStockSummaryData();
+
+    // ✅ Low stock MUST be loaded globally for Quick Stats
+    fetch(`${API_BASE}/reports/low-stock`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load low stock");
+        return res.json();
+      })
+      .then((data) => setLowStockAlerts(data))
+      .catch((err) => console.error("Low stock error:", err));
+  }, []);
+
 
   const filteredStockSummary = useMemo(() => {
     if (stockView === "all") return stockSummary;
@@ -349,71 +476,125 @@ export default function Reports() {
     );
   }, [lowStockAlerts, stockView]);
 
-  const quickCounts = useMemo(() => {
-    const unitsAvailable = filteredStockSummary.reduce(
-      (acc, row) => acc + (row.totalAvailable ?? row.available ?? 0),
-      0
-    );
-    const lowStockCount = filteredLowStock.length;
-    const soldUnits = filteredStockSummary.reduce(
-      (acc, row) => acc + (row.totalSold ?? 0),
-      0
-    );
+  const categoryTotals = useMemo(() => {
+    const totals = { granite: 0, quartz: 0, monuments: 0 };
 
-    return { unitsAvailable, lowStockCount, soldUnits };
-  }, [filteredStockSummary, filteredLowStock]);
+    const source =
+      stockView === "all"
+        ? stockSummary
+        : stockSummary.filter(
+          (r) => normalizeCategory(r.category) === normalizeCategory(stockView)
+        );
 
-  const colorCategory = stockView === "all" ? "all" : stockView;
-  const getStatColor = (metric) => metricColor(metric, colorCategory);
-
-  const buildSlices = (metric) => {
-    if (stockView !== "all") return null;
-
-    if (metric === "low") {
-      const lowByCat = {};
-      lowStockAlerts.forEach((row) => {
-        const key = normalizeCategory(row.category);
-        lowByCat[key] = (lowByCat[key] || 0) + 1;
-      });
-      return Object.entries(lowByCat).map(([cat, value]) => ({
-        value,
-        color: categoryColor(cat, "base"),
-      }));
-    }
-
-    const keyMap = {
-      available: "totalAvailable",
-      sold: "totalSold",
-    };
-    const field = keyMap[metric];
-    if (!field) return null;
-
-    const byCat = {};
-    filteredStockSummary.forEach((row) => {
-      const cat = normalizeCategory(row.category);
-      const val = row[field] ?? 0;
-      byCat[cat] = (byCat[cat] || 0) + val;
+    source.forEach((row) => {
+      const key = normalizeCategory(row.category);
+      totals[key] += Number(row.totalAvailable ?? 0);
     });
 
-    return Object.entries(byCat).map(([cat, value]) => ({
-      value,
-      color: categoryColor(cat, "base"),
+    return totals;
+  }, [stockSummary, stockView]);
+
+
+  const lowStockTotals = useMemo(() => {
+    const totals = { granite: 0, quartz: 0, monuments: 0 };
+
+    const source =
+      stockView === "all"
+        ? lowStockAlerts
+        : lowStockAlerts.filter(
+          (r) => normalizeCategory(r.category) === normalizeCategory(stockView)
+        );
+
+    source.forEach((row) => {
+      const key = normalizeCategory(row.category);
+      totals[key] += 1;
+    });
+
+    return totals;
+  }, [lowStockAlerts, stockView]);
+
+
+  const soldTotals = useMemo(() => {
+    const totals = { granite: 0, quartz: 0, monuments: 0 };
+
+    const source =
+      stockView === "all"
+        ? stockSummary
+        : stockSummary.filter(
+          (r) => normalizeCategory(r.category) === normalizeCategory(stockView)
+        );
+
+    source.forEach((row) => {
+      const key = normalizeCategory(row.category);
+      totals[key] += Number(row.totalSold ?? 0);
+    });
+
+    return totals;
+  }, [stockSummary, stockView]);
+
+  const addDisplayValues = (list) => {
+    return list.map((d) => ({
+      ...d,
+      displayValue: d.value > 0 ? d.value : 0,
     }));
   };
 
-  const buildGradient = (slices) => {
-    if (!slices || slices.length === 0) return neutralRing;
-    const total = slices.reduce((acc, s) => acc + (s.value || 0), 0);
-    if (!total) return neutralRing;
-    let current = 0;
-    return `conic-gradient(${slices
-      .map((slice) => {
-        const start = (current / total) * 100;
-        current += slice.value || 0;
-        const end = (current / total) * 100;
-        return `${slice.color} ${start}% ${end}%`;
-      })
-      .join(", ")})`;
+  const categoryChartData = useMemo(() => {
+    return addDisplayValues([
+      { key: "monuments", name: "Monuments", value: categoryTotals.monuments, color: categorySwatch("monuments") },
+      { key: "granite", name: "Granite", value: categoryTotals.granite, color: categorySwatch("granite") },
+      { key: "quartz", name: "Quartz", value: categoryTotals.quartz, color: categorySwatch("quartz") },
+    ]);
+  }, [categoryTotals]);
+
+  const lowChartData = useMemo(() => {
+    return addDisplayValues([
+      { key: "monuments", name: "Monuments", value: lowStockTotals.monuments, color: categorySwatch("monuments") },
+      { key: "granite", name: "Granite", value: lowStockTotals.granite, color: categorySwatch("granite") },
+      { key: "quartz", name: "Quartz", value: lowStockTotals.quartz, color: categorySwatch("quartz") },
+    ]);
+  }, [lowStockTotals]);
+
+
+
+  const soldChartData = useMemo(() => {
+    return addDisplayValues([
+      { key: "monuments", name: "Monuments", value: soldTotals.monuments, color: categorySwatch("monuments") },
+      { key: "granite", name: "Granite", value: soldTotals.granite, color: categorySwatch("granite") },
+      { key: "quartz", name: "Quartz", value: soldTotals.quartz, color: categorySwatch("quartz") },
+    ]);
+  }, [soldTotals]);
+
+
+  const totalUnits = useMemo(
+    () => categoryChartData.reduce((acc, d) => acc + (d.value || 0), 0),
+    [categoryChartData]
+  );
+  const totalLow = useMemo(
+    () => lowChartData.reduce((acc, d) => acc + (d.value || 0), 0),
+    [lowChartData]
+  );
+  const totalSold = useMemo(
+    () => soldChartData.reduce((acc, d) => acc + (d.value || 0), 0),
+    [soldChartData]
+  );
+
+  const renderPieTooltip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    const fill = item.payload?.color || item.fill;
+    const rawValue = item.payload?.value ?? item.value ?? 0;
+    return (
+      <div className="chart-tooltip">
+        <div className="chart-tooltip__title">
+          <span className="report-legend__dot" style={{ background: fill }} />
+          {item.name}
+        </div>
+        <div className="chart-tooltip__value">
+          {Number(rawValue).toLocaleString("en-IN")} units
+        </div>
+      </div>
+    );
   };
 
 
@@ -421,67 +602,61 @@ export default function Reports() {
 
 
 
-useEffect(() => {
-  async function loadReport() {
+  useEffect(() => {
+    async function loadReport() {
 
-    // STOCK SUMMARY
-    if (activeReport === "stock-summary") {
-      const res = await fetch(`${API_BASE}/reports/stock-summary`);
-      const data = await res.json();
-      setStockSummary(data);
+      // STOCK SUMMARY
+      if (activeReport === "stock-summary") {
+        await fetchStockSummaryData();
+      }
+
+      // LOW STOCK ALERTS
+
+      if (activeReport === "batch-wise") {
+        const res = await fetch(`${API_BASE}/reports/batch-wise`);
+        const data = await res.json();
+        setBatchWiseStock(data);
+
+        // Preload item-wise data to power batch detail modal
+        const itemRes = await fetch(`${API_BASE}/reports/item-wise`);
+        const itemData = await itemRes.json();
+        setItemWiseStock(itemData);
+      }
+      if (activeReport === "item-wise") {
+        const res = await fetch(`${API_BASE}/reports/item-wise`);
+        const data = await res.json();
+        setItemWiseStock(data);
+      }
+      if (activeReport === "sales") {
+        const res = await fetch(`${API_BASE}/reports/sales`);
+        const data = await res.json();
+        setSalesReport(data);
+      }
+      if (activeReport === "returns") {
+        const res = await fetch(`${API_BASE}/reports/returns`);
+        const data = await res.json();
+        setReturnsReport(data);
+      }
+      if (activeReport === "movement") {
+        const res = await fetch(`${API_BASE}/reports/movement`);
+        const data = await res.json();
+        setMovementHistory(data);
+      }
+      if (activeReport === "payments") {
+        const res = await fetch(`${API_BASE}/reports/payments`);
+        const data = await res.json();
+        console.log("Payments data:", data);
+        setPaymentReport(data);
+      }
+
+
+
+
+
+
     }
 
-    // LOW STOCK ALERTS
-    if (activeReport === "low-stock") {
-      const res = await fetch(`${API_BASE}/reports/low-stock`);
-      const data = await res.json();
-      setLowStockAlerts(data);
-    }
-    if (activeReport === "batch-wise") {
-      const res = await fetch(`${API_BASE}/reports/batch-wise`);
-      const data = await res.json();
-      setBatchWiseStock(data);
-
-      // Preload item-wise data to power batch detail modal
-      const itemRes = await fetch(`${API_BASE}/reports/item-wise`);
-      const itemData = await itemRes.json();
-      setItemWiseStock(itemData);
-    }
-    if (activeReport === "item-wise") {
-      const res = await fetch(`${API_BASE}/reports/item-wise`);
-      const data = await res.json();
-      setItemWiseStock(data);
-    }
-    if (activeReport === "sales") {
-  const res = await fetch(`${API_BASE}/reports/sales`);
-  const data = await res.json();
-  setSalesReport(data);
-}
-if (activeReport === "returns") {
-  const res = await fetch(`${API_BASE}/reports/returns`);
-  const data = await res.json();
-  setReturnsReport(data);
-}
-if (activeReport === "movement") {
-  const res = await fetch(`${API_BASE}/reports/movement`);
-  const data = await res.json();
-  setMovementHistory(data);
-}
-if (activeReport === "payments") {
-  const res = await fetch(`${API_BASE}/reports/payments`);
-  const data = await res.json();
-  console.log("Payments data:", data);
-  setPaymentReport(data);
-}
-
-
-
-
-
-
-  }
-
-  loadReport();
+    loadReport();
   }, [activeReport]);
 
   const openBatchDetails = (batchCode) => {
@@ -496,88 +671,110 @@ if (activeReport === "payments") {
   };
 
 
-  const stockSummaryColumns = [
-    { key: "category", label: "Category" },
-    { key: "totalQuantity", label: "Total Quantity" },
-    { key: "totalOut", label: "Total Out" },
-    { key: "totalSold", label: "Total Sold" },
-    { key: "totalReturned", label: "Total Returned" },
-    { key: "totalAvailable", label: "Total Available" },
-  ];
+  const withCategoryColumn = (columns, index = 0) => {
+    if (!showAll) return columns;
+    const categoryColumn = { key: "category", label: "Category" };
+    return [
+      ...columns.slice(0, index),
+      categoryColumn,
+      ...columns.slice(index),
+    ];
+  };
 
-  const batchWiseColumns = [
-  { key: "batchCode", label: "Batch Code", render: (row) => (
-    <button className="link-btn" onClick={() => openBatchDetails(row.batchCode)}>
-      {row.batchCode}
-    </button>
-  ) },
-  { key: "category", label: "Category" },
-  { key: "itemCount", label: "Item Count" },
-  { key: "batchQuantity", label: "Batch Quantity" },
-  { key: "sold", label: "Sold" },
-  { key: "out", label: "Out" },
-  { key: "returned", label: "Returned" },
-  { key: "available", label: "Available" },
-];
+  const stockSummaryColumns = withCategoryColumn(
+    [
+      { key: "totalQuantity", label: "Total Quantity" },
+      { key: "totalOut", label: "Total Out" },
+      { key: "totalSold", label: "Total Sold" },
+      { key: "totalReturned", label: "Total Returned" },
+      { key: "totalAvailable", label: "Total Available" },
+    ],
+    0
+  );
 
+  const batchWiseColumns = withCategoryColumn(
+    [
+      {
+        key: "batchCode",
+        label: "Batch Code",
+        render: (row) => (
+          <button className="link-btn" onClick={() => openBatchDetails(row.batchCode)}>
+            {row.batchCode}
+          </button>
+        ),
+      },
+      { key: "batchQuantity", label: "Batch Quantity" },
+      { key: "sold", label: "Sold" },
+      { key: "out", label: "Out" },
+      { key: "returned", label: "Returned" },
+      { key: "available", label: "Available" },
+    ],
+    1
+  );
 
-  const itemWiseColumns = [
-    {
-      key: "batchCode",
-      label: "Batch Code",
-      render: (row) => (
-        <button className="link-btn" onClick={() => openBatchDetails(row.batchCode)}>
-          {row.batchCode}
-        </button>
-      ),
-    },
-    { key: "itemId", label: "Item ID" },
-    { key: "category", label: "Category" },
-    { key: "productName", label: "Product Name" },
-    { key: "size", label: "Size" },
-    { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
-    { key: "status", label: "Status", render: (row) => <StatusPill status={row.status} /> },
-    { key: "clientName", label: "Client Name" },
-    { key: "deliveryOrderNo", label: "Delivery Order No" },
-    { key: "createdDate", label: "Created Date" },
-  ];
+  const itemWiseColumns = withCategoryColumn(
+    [
+      {
+        key: "batchCode",
+        label: "Batch Code",
+        render: (row) => (
+          <button className="link-btn" onClick={() => openBatchDetails(row.batchCode)}>
+            {row.batchCode}
+          </button>
+        ),
+      },
+      { key: "itemId", label: "Item ID" },
+      { key: "productName", label: "Product Name" },
+      { key: "size", label: "Size" },
+      { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
+      { key: "status", label: "Status", render: (row) => <StatusPill status={row.status} /> },
+      { key: "clientName", label: "Client Name" },
+      { key: "deliveryOrderNo", label: "Delivery Order No" },
+      { key: "createdDate", label: "Created Date" },
+    ],
+    2
+  );
 
-  const salesColumns = [
-    { key: "batchCode", label: "Batch Code" },
-    { key: "itemId", label: "Item ID" },
-    { key: "category", label: "Category" },
-    { key: "productName", label: "Product Name" },
-    { key: "size", label: "Size" },
-    { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
-    { key: "clientName", label: "Client Name" },
-    { key: "deliveryOrderNo", label: "Delivery Order No" },
-    { key: "saleDate", label: "Sale Date" },
-    { key: "deliveryMode", label: "Delivery Mode" },
-  ];
+  const salesColumns = withCategoryColumn(
+    [
+      { key: "batchCode", label: "Batch Code" },
+      { key: "itemId", label: "Item ID" },
+      { key: "productName", label: "Product Name" },
+      { key: "size", label: "Size" },
+      { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
+      { key: "clientName", label: "Client Name" },
+      { key: "deliveryOrderNo", label: "Delivery Order No" },
+      { key: "saleDate", label: "Sale Date" },
+      { key: "deliveryMode", label: "Delivery Mode" },
+    ],
+    2
+  );
 
-  const returnsColumns = [
-    { key: "batchCode", label: "Batch Code" },
-    {
-      key: "itemIds",
-      label: "Item IDs",
-      render: (row) => row.itemIds.join(", "),
-      getValue: (row) => row.itemIds.join(" | "),
-    },
-    { key: "category", label: "Category" },
-    { key: "productName", label: "Product Name" },
-    { key: "size", label: "Size" },
-    { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
-    { key: "clientName", label: "Client Name" },
-    { key: "deliveryOrderNo", label: "Delivery Order No" },
-    { key: "returnDate", label: "Return Date" },
-    { key: "reason", label: "Reason" },
-    {
-      key: "bulk",
-      label: "Bulk?",
-      render: (row) => (row.bulk ? "Yes" : "No"),
-      getValue: (row) => (row.bulk ? "Yes" : "No"),
-    },
-  ];
+  const returnsColumns = withCategoryColumn(
+    [
+      { key: "batchCode", label: "Batch Code" },
+      {
+        key: "itemIds",
+        label: "Item IDs",
+        render: (row) => row.itemIds.join(", "),
+        getValue: (row) => row.itemIds.join(" | "),
+      },
+      { key: "productName", label: "Product Name" },
+      { key: "size", label: "Size" },
+      { key: "colour", label: "Colour", render: (row) => row.colour || row.color || "-" },
+      { key: "clientName", label: "Client Name" },
+      { key: "deliveryOrderNo", label: "Delivery Order No" },
+      { key: "returnDate", label: "Return Date" },
+      { key: "reason", label: "Reason" },
+      {
+        key: "bulk",
+        label: "Bulk?",
+        render: (row) => (row.bulk ? "Yes" : "No"),
+        getValue: (row) => (row.bulk ? "Yes" : "No"),
+      },
+    ],
+    2
+  );
 
   const movementColumns = [
     { key: "itemId", label: "Item ID" },
@@ -591,14 +788,16 @@ if (activeReport === "payments") {
     { key: "undoReason", label: "Undo Reason" },
   ];
 
-  const lowStockColumns = [
-    { key: "batchCode", label: "Batch Code" },
-    { key: "itemName", label: "Item Name" },
-    { key: "category", label: "Category" },
-    { key: "availableQuantity", label: "Available Quantity" },
-    { key: "threshold", label: "Threshold" },
-    { key: "status", label: "Status (LOW STOCK)", render: (row) => <StatusPill status={row.status} /> },
-  ];
+  const lowStockColumns = withCategoryColumn(
+    [
+      { key: "batchCode", label: "Batch Code" },
+      { key: "itemName", label: "Item Name" },
+      { key: "availableQuantity", label: "Available Quantity" },
+      { key: "threshold", label: "Threshold" },
+      { key: "status", label: "Status (LOW STOCK)", render: (row) => <StatusPill status={row.status} /> },
+    ],
+    2
+  );
 
   const paymentColumns = [
     { key: "poInvoiceNumber", label: "PO Invoice Number" },
@@ -607,7 +806,9 @@ if (activeReport === "payments") {
     {
       key: "amount",
       label: "Amount",
-      render: (row) => `Rs ${row.amount.toLocaleString("en-IN")}`,
+      render: (row) =>
+        `${row.currency || "INR"} ${(row.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+
       getValue: (row) => row.amount,
     },
     { key: "paymentStatus", label: "Payment Status", render: (row) => <StatusPill status={row.paymentStatus} /> },
@@ -615,7 +816,7 @@ if (activeReport === "payments") {
     { key: "createdAt", label: "Created At" },
   ];
 
-    const reportsConfig = [
+  const reportsConfig = [
     {
       key: "stock-summary",
       label: "Stock Summary",
@@ -693,21 +894,23 @@ if (activeReport === "payments") {
       disableStockFilter: true,
       dateKeys: ["scanDate"],
     },
+
     {
       key: "low-stock",
       label: "Low Stock Alerts",
       title: "LOW STOCK ALERT REPORT",
       description: "Batches below threshold.",
       columns: lowStockColumns,
-      rows: lowStockAlerts,
+      rows: filteredLowStock,   // ✅ FIX
       filename: "low-stock-alert-report",
-      stockFilter: true,
-      forceStockView: "low",
-      categoryFilter: true,
+      stockFilter: false,
+      categoryFilter: true,     // ✅ ENABLE category filter
       quantityKey: "availableQuantity",
       reorderKey: "threshold",
       dateKeys: [],
     },
+
+
     {
       key: "payments",
       label: "Payments",
@@ -750,16 +953,18 @@ if (activeReport === "payments") {
             <SlidersHorizontal size={16} />
             Stock focus
           </label>
-          <select
+          <SelectMenu
             value={stockView}
-            onChange={(e) => setStockView(e.target.value)}
+            onChange={setStockView}
             className="stock-filter-select"
-          >
-            <option value="all">Show all</option>
-            <option value="monuments">Monuments</option>
-            <option value="granite">Granite</option>
-            <option value="quartz">Quartz</option>
-          </select>
+            options={[
+              { label: "Show all", value: "all" },
+              { label: "Monuments", value: "monuments" },
+              { label: "Granite", value: "granite" },
+              { label: "Quartz", value: "quartz" },
+            ]}
+            ariaLabel="Stock focus"
+          />
           <p className="filter-hint">Filter reports by category.</p>
         </div>
       </header>
@@ -767,43 +972,75 @@ if (activeReport === "payments") {
       <div className="reports-grid">
         <div className="report-stats card">
           <p className="eyebrow">Quick stats</p>
-          <div className="report-stats__row">
-            {(() => {
-              const stats = [
-                { key: "available", label: "Units available", value: quickCounts.unitsAvailable, color: getStatColor("available") },
-                { key: "low", label: "Low stock items", value: quickCounts.lowStockCount, color: getStatColor("low") },
-                { key: "sold", label: "Units sold (all time)", value: quickCounts.soldUnits, color: getStatColor("sold") },
-              ];
-              const total = Math.max(
-                stats.reduce((acc, s) => acc + (s.value || 0), 0),
-                1
-              );
-              return stats.map((stat) => {
-                const percent = Math.min(100, Math.round(((stat.value || 0) / total) * 100));
-                const angle = (stat.value || 0) === 0 ? 0 : (stat.value / total) * 360;
-                const slices = buildSlices(stat.key);
-                const bg =
-                  slices && slices.length
-                    ? buildGradient(slices)
-                    : angle === 0
-                      ? neutralRing
-                      : `conic-gradient(${stat.color} 0deg ${angle}deg, ${neutralRing} ${angle}deg 360deg)`;
-                return (
-                  <div key={stat.key} className="stat-pie-card">
-                    <div className="stat-pie" style={{ background: bg }}>
-                      <div className="stat-pie__center">
-                        <div className="stat-pie__value">{Number(stat.value || 0).toLocaleString("en-IN")}</div>
-                        <div className="stat-pie__percent">{percent}%</div>
-                      </div>
-                    </div>
-                    <div className="stat-pie__value-text">
-                      {Number(stat.value || 0).toLocaleString("en-IN")}
-                    </div>
-                    <span className="report-stats__label">{stat.label}</span>
-                  </div>
-                );
-              });
-            })()}
+          <div className="report-stats__row donuts-row">
+            <div className="donut-card">
+              <div className="donut-title">Category Distribution</div>
+              <div className="donut-chart-box">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={categoryChartData}
+                      dataKey="displayValue"
+                      nameKey="name"
+                      outerRadius={90}
+                      paddingAngle={2}
+                    >
+                      {categoryChartData.map((entry, idx) => (
+                        <Cell key={`cat-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReLegend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="donut-card">
+              <div className="donut-title">Low Stock (Category)</div>
+              <div className="donut-chart-box">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={(lowChartData)}
+                      dataKey="displayValue"
+                      nameKey="name"
+                      outerRadius={90}
+                      paddingAngle={2}
+                    >
+                      {(lowChartData).map((entry, idx) => (
+                        <Cell key={`low-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReLegend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="donut-card">
+              <div className="donut-title">Units Sold (Category)</div>
+              <div className="donut-chart-box">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={(soldChartData)}
+                      dataKey="displayValue"
+                      nameKey="name"
+                      outerRadius={90}
+                      paddingAngle={2}
+                    >
+                      {(soldChartData).map((entry, idx) => (
+                        <Cell key={`sold-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReLegend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -866,13 +1103,22 @@ if (activeReport === "payments") {
               );
             })()}
 
-            <div className="table-wrap modal-table-scroll" style={{ marginTop: "10px" }}>
-              <table className="table">
+            <div className="table-wrap modal-table-scroll excel-table-wrap" style={{ marginTop: "10px" }}>
+              <table className="table excel-table">
+                <colgroup>
+                  <col className="excel-col-md" />
+                  <col className="excel-col-md" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-lg" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Batch Code</th>
                     <th>Item ID</th>
-                    <th>Category</th>
+                    {showAll && <th>Category</th>}
                     <th>Product Name</th>
                     <th>Size</th>
                     <th>Colour</th>
@@ -891,7 +1137,9 @@ if (activeReport === "payments") {
                       <tr key={item.itemId || item.Item_id || `${item.batchCode}-${item.productName}`}>
                         <td>{item.batchCode || item.Batch_code || batchDetail.batchCode}</td>
                         <td>{item.itemId || item.Item_id || "-"}</td>
-                        <td>{item.category || item.Category || batchDetail.summary?.category || "-"}</td>
+                        {showAll && (
+                          <td>{item.category || item.Category || batchDetail.summary?.category || "-"}</td>
+                        )}
                         <td>{item.productName || item.Product_name || "-"}</td>
                         <td>{item.size || item.Size || "-"}</td>
                         <td>{item.colour || item.Colour || item.Color || "-"}</td>
@@ -912,4 +1160,3 @@ if (activeReport === "payments") {
     </div>
   );
 }
-

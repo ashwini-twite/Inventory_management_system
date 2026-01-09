@@ -13,18 +13,21 @@ export default function ManageStock() {
       title: "Products",
       description: "Review and manage product batches and stock levels.",
       icon: <Boxes size={24} strokeWidth={1.7} />,
+      className: "card-granite",
       onClick: () => navigate("/manage-stock/products"),
     },
     {
       title: "Stock Counts",
       description: "Perform and review real-time stock count checks.",
       icon: <ClipboardList size={24} strokeWidth={1.7} />,
+      className: "card-quartz",
       onClick: () => navigate("/manage-stock/counts"),
     },
     {
       title: "Dispatch Stocks",
       description: "Track and manage stocks queued for dispatch.",
       icon: <Truck size={24} strokeWidth={1.7} />,
+      className: "card-monuments",
       onClick: () => navigate("/manage-stock/reserved"),
     },
   ];
@@ -39,7 +42,7 @@ export default function ManageStock() {
         {cards.map((card) => (
           <button
             key={card.title}
-            className="manage-landing__card"
+            className={`manage-landing__card ${card.className}`}
             onClick={card.onClick}
             type="button"
           >

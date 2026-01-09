@@ -16,16 +16,16 @@
 .scan-title {
   font-size: 26px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-main);
 }
 
 /* SCAN TYPE TOGGLE */
 .scan-toggle button {
   padding: 10px 22px;
   border-radius: 999px;
-  border: 1px solid #2f67ef;
-  background: #eef3ff;
-  color: #2f67ef;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-main);
   font-weight: 600;
   cursor: pointer;
   margin-left: 10px;
@@ -34,14 +34,14 @@
 
 .scan-toggle button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(47, 103, 239, 0.18);
+  box-shadow: 0 10px 20px rgba(30, 64, 175, 0.18);
 }
 
 .toggle-active {
-  background: linear-gradient(180deg, #3f7bff 0%, #2f67ef 100%) !important;
+  background: var(--brand-gradient) !important;
   color: #fff !important;
-  border-color: #2f67ef !important;
-  box-shadow: 0 12px 24px rgba(47, 103, 239, 0.28);
+  border-color: transparent !important;
+  box-shadow: var(--brand-glow);
 }
 
 /* MAIN SCAN WHITE BOX */
@@ -68,15 +68,15 @@
 .scan-mode-buttons button {
   padding: 8px 16px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f7f7ff;
+  border: 1px solid var(--border-color);
+  background: #fff;
   cursor: pointer;
 }
 
 .mode-active {
-  background: #4f46e5 !important;
+  background: var(--brand-gradient) !important;
   color: white !important;
-  border-color: #4f46e5 !important;
+  border-color: transparent !important;
 }
 
 /* MANUAL ENTRY */
@@ -90,15 +90,18 @@
   flex: 1;
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
 }
 
 .save-btn {
-  background: #4f46e5;
-  padding: 8px 14px;
-  border-radius: 10px;
-  color: white;
+  background: var(--brand-gradient);
+  padding: 12px 18px;
+  border-radius: 14px;
+  color: #ffffff;
   border: none;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 /* CAMERA BOX */
@@ -129,19 +132,25 @@
 .cam-btn {
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #f7f7ff;
+  border: 1px solid var(--border-color);
+  background: #fff;
 }
 
 .cam-btn.blue {
-  background: #4f46e5;
-  color: white;
+  background: var(--brand-gradient);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .camera-note {
   margin-top: 6px;
   font-size: 13px;
-  color: #777;
+  color: var(--text-muted);
 }
 
 /* PRODUCT CARD */
@@ -163,13 +172,13 @@
   display: flex;
   flex-direction: column;
   padding: 10px;
-  background: #f8f8ff;
+  background: #f8fafc;
   border-radius: 12px;
 }
 
 .prod-field label {
   font-size: 12px;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .prod-field span {
@@ -180,7 +189,7 @@
 .prod-price {
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 /* CLIENT CARD */
@@ -194,15 +203,16 @@
 
 .client-select {
   width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
+}
+
+.client-select .select-menu__trigger {
+  min-height: 44px;
 }
 
 .client-info {
   margin-top: 10px;
   padding: 10px;
-  background: #f7f7ff;
+  background: #f8fafc;
   border-radius: 12px;
 }
 
@@ -211,7 +221,7 @@
   width: 100%;
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-color);
 }
 
 .client-actions {
@@ -221,15 +231,38 @@
 }
 
 .submit-main {
-  background: #4f46e5;
-  color: white;
+  background: var(--brand-gradient);
+  color: #ffffff;
   border: none;
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.save-btn:hover,
+.cam-btn.blue:hover,
+.submit-main:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.4);
+}
+
+.save-btn:active,
+.cam-btn.blue:active,
+.submit-main:active {
+  transform: translateY(0);
+}
+
+.save-btn:focus,
+.cam-btn.blue:focus,
+.submit-main:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
 }
 
 .reset-main {
-  background: #e6e6e6;
+  background: #f1f5f9;
   border: none;
   padding: 10px 16px;
   border-radius: 10px;

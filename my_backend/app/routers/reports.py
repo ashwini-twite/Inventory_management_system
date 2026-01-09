@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.database import supabase
+from app.utils.report_ordering import apply_order 
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -162,19 +163,17 @@ def get_item_wise_stock():
     return result
 @router.get("/sales")
 def get_sales_report():
-    movements = supabase.table("Stock_movement") \
+    query = supabase.table("Stock_movement") \
         .select("""
-            Stock_id,
-            Client_id,
-            Delivery_order_no,
             Scan_date,
+            Delivery_order_no,
             delivery_mode,
             Products (
+                Batch_code,
                 Item_id,
                 Product_name,
                 Size,
                 Category,
-                Batch_code,
                 Purchase_order_items (
                     Colour
                 )
@@ -183,8 +182,9 @@ def get_sales_report():
                 Client_name
             )
         """) \
-        .eq("Movement_type", "Sold") \
-        .execute().data
+        .eq("Movement_type", "Sold")
+
+    movements = apply_order(query, "sales").execute().data
 
     result = []
 
@@ -213,43 +213,57 @@ def get_sales_report():
 
     return result
 
+
 @router.get("/returns")
 def get_returns_report():
-    rows = supabase.table("Return_list") \
+    query = supabase.table("Return_list") \
         .select("""
-    item_ids,
-    product_name,
-    size,
-    colour,
-    batch_code,
-    client_name,
-    do_number,
-    return_date,
-    reason,
-    is_bulk
-""")\
-        .order("return_date", desc=True) \
+            item_ids,
+            product_name,
+            size,
+            colour,
+            batch_code,
+            client_name,
+            do_number,
+            return_date,
+            reason,
+            is_bulk
+        """)
+
+    rows = apply_order(query, "returns").execute().data
+
+    products = supabase.table("Products") \
+        .select("Batch_code, Category") \
         .execute().data
+
+    category_by_batch = {}
+    for p in products:
+        bc = p.get("Batch_code")
+        if bc and bc not in category_by_batch:
+            category_by_batch[bc] = p.get("Category")
 
     result = []
 
     for r in rows:
-      result.append({
-    "itemIds": r.get("item_ids", []),
-    "productName": r.get("product_name"),
-    "size": r.get("size"),
-    "colour": r.get("colour") or "-",
-    "category": "-",  # snapshot not stored; safe fallback
-    "batchCode": r.get("batch_code"),
-    "clientName": r.get("client_name"),
-    "deliveryOrderNo": r.get("do_number"),
-    "returnDate": r.get("return_date"),
-    "reason": r.get("reason"),
-    "bulk": r.get("is_bulk", False),
-})
-  
+        batch_code = r.get("batch_code")
+
+        result.append({
+            "itemIds": r.get("item_ids", []),
+            "productName": r.get("product_name"),
+            "size": r.get("size"),
+            "colour": r.get("colour") or "-",
+            "category": category_by_batch.get(batch_code, "-"),
+            "batchCode": batch_code,
+            "clientName": r.get("client_name"),
+            "deliveryOrderNo": r.get("do_number"),
+            "returnDate": r.get("return_date"),
+            "reason": r.get("reason"),
+            "bulk": r.get("is_bulk", False),
+        })
 
     return result
+
+
 @router.get("/low-stock")
 def get_low_stock():
     # 1. Fetch arrived PO item IDs
@@ -269,18 +283,29 @@ def get_low_stock():
 
     # 3. Filter Low Stock & Build Response
     low_stock = []
-    threshold = 5
+    
+    # Thresholds configuration
+    THRESHOLDS = {
+        "Granite": 10,
+        "Quartz": 10,
+        "Monuments": 5
+    }
+    DEFAULT_THRESHOLD = 5
 
     for b in batches:
         avail = b.get("Available", 0)
+        po_id = b.get("Po_item_id")
+        details = po_lookup.get(po_id, {})
+        category = details.get("category", "-")
+        
+        # Category-specific threshold
+        threshold = THRESHOLDS.get(category, DEFAULT_THRESHOLD)
+        
         if avail <= threshold:
-            po_id = b.get("Po_item_id")
-            details = po_lookup.get(po_id, {})
-            
             low_stock.append({
                 "batchCode": b["Batch_code"],
                 "itemName": details.get("itemName", "-"),
-                "category": details.get("category", "-"),
+                "category": category,
                 "availableQuantity": avail,
                 "threshold": threshold,
                 "status": "LOW STOCK"
@@ -292,7 +317,7 @@ def get_low_stock():
 def get_payments_report():
     # 1️⃣ Fetch purchase orders
     orders = supabase.table("Purchase_orders") \
-        .select("Po_id, Po_invoice_no, Vendor_id") \
+        .select("Po_id, Po_invoice_no, Vendor_id, currency") \
         .execute().data
 
     # 2️⃣ Fetch vendors
@@ -311,9 +336,12 @@ def get_payments_report():
         total_lookup[item["Po_id"]] = total_lookup.get(item["Po_id"], 0) + (item["Total_price"] or 0)
 
     # 4️⃣ Fetch payments
-        payments = supabase.table("Payments") \
-        .select("Po_id, Amount, Payment_date, Created_at, Notes") \
-        .execute().data
+        query = supabase.table("Payments") \
+            .select("Po_id, Amount, Payment_date, Created_at, Notes")
+
+        payments = apply_order(query, "payments").execute().data
+
+ 
 
     payments_by_po = {}
     for p in payments:
@@ -354,23 +382,26 @@ def get_payments_report():
             "amount": paid,
             "paymentStatus": status,
             "notes": "",
-            "createdAt": created_at,          # ✅ first payment timestamp
+            "createdAt": created_at,
+             "currency": po.get("currency", "INR"),
+                   # ✅ first payment timestamp
         })
 
     return report
 
 @router.get("/movement")
 def get_movement_history():
-    movements = supabase.table("Stock_movement") \
-        .select("""
-            Stock_id, Movement_type, Scan_date, delivery_mode, undo_reason,
-            Client_id, Delivery_order_no,
-            Products ( Item_id, Product_name ),
-            Clients ( Client_name )
-        """) \
-        .order("Scan_date", desc=True) \
-        .execute().data
-        
+    
+    query = supabase.table("Stock_movement") \
+    .select("""
+        Stock_id, Movement_type, Scan_date, delivery_mode, undo_reason,
+        Client_id, Delivery_order_no,
+        Products ( Item_id, Product_name ),
+        Clients ( Client_name )
+    """)
+
+    movements = apply_order(query, "movement").execute().data
+   
     result = []
     
     for m in movements:

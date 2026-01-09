@@ -2,6 +2,8 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import "../styles/manageStock.css";
+import CategoryPills from "../components/CategoryPills";
+import RowActionsMenu from "../components/RowActionsMenu";
 // import { supabase } from "../supabaseClient"; // REMOVED
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -10,6 +12,7 @@ export default function ManageStockProducts() {
   const [barcodePopup, setBarcodePopup] = useState(null);
   const [idPopup, setIdPopup] = useState(null);
   const [detailsPopup, setDetailsPopup] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const [activeTab, setActiveTab] = useState("Monuments");
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,20 +86,36 @@ export default function ManageStockProducts() {
   -------------------------------------------- */
   const filteredProducts = products
     .filter((p) => {
-      const term = searchTerm.toLowerCase();
-      const blob = [p.batchCode, p.idRange, p.category, p.productName, p.size, p.colour]
-        .join(" ")
-        .toLowerCase();
-
-      const matchTerm = !term || blob.includes(term);
+      // 1. Availability Filter
       const matchAvail =
         availabilityFilter === "all"
           ? true
           : availabilityFilter === "in"
             ? p.available > 0
             : p.available <= 0;
+      if (!matchAvail) return false;
 
-      return matchTerm && matchAvail;
+      // 2. Universal Search
+      if (searchTerm.trim()) {
+        const parts = searchTerm.toLowerCase().split(/[ ,+]+/).filter(Boolean);
+        const searchableText = [
+          p.batchCode,
+          p.idRange,
+          p.category,
+          p.productName,
+          p.size,
+          p.colour,
+          p.qty,
+          p.out,
+          p.sold,
+          p.returned,
+          p.available
+        ].join(" ").toLowerCase();
+
+        return parts.every(p => searchableText.includes(p));
+      }
+
+      return true;
     });
 
   /* --------------------------------------------
@@ -106,63 +125,69 @@ export default function ManageStockProducts() {
     <div className="ms-products-page">
       <div className="ms-products-header">
         <h1 className="section-title">Manage Stock</h1>
-        <div className="ms-pill-tabs">
-          {["Monuments", "Granite", "Quartz"].map((tab) => (
-            <button
-              key={tab}
-              className={`ms-pill-tab ${activeTab === tab ? "active" : ""}`}
-              onClick={() => setActiveTab(tab)}
-              type="button"
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        <CategoryPills value={activeTab} onChange={setActiveTab} className="ms-pill-tabs" />
       </div>
 
       <div className="ms-products-card">
-        <div className="ms-products-filters">
-          <input
-            className="ms-products-input"
-            placeholder="Search product name, batch code, availability..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <div className="ms-products-actions">
-            <button className="ms-products-btn primary" type="button">
-              Search
-            </button>
-            <button
-              className="ms-products-btn ghost"
-              type="button"
-              onClick={() => {
-                setSearchTerm("");
-                setAvailabilityFilter("all");
-              }}
+        <div className="list-header-row-standard">
+          <div className="list-filters-standard">
+            <div className="search-box-wrapper-standard">
+              <input
+                type="text"
+                className="search-input-standard"
+                placeholder="Search products (batch, name, size, colour...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button className="search-clear-btn-standard" onClick={() => setSearchTerm("")}>&times;</button>
+              )}
+            </div>
+
+            <select
+              className="ms-products-select-standard"
+              value={availabilityFilter}
+              onChange={(e) => setAvailabilityFilter(e.target.value)}
+              style={{ width: "auto", padding: "8px 12px", borderRadius: "10px", border: "1px solid #e2e8f0" }}
             >
-              Clear
-            </button>
+              <option value="all">All Availability</option>
+              <option value="in">In Stock</option>
+              <option value="out">Out of Stock</option>
+            </select>
           </div>
         </div>
 
         {loading ? (
           <p className="ms-products-loading">Loading...</p>
         ) : (
-          <div className="ms-products-table-wrap">
-            <table className="ms-products-table">
+          <div className="ms-products-table-wrap excel-table-wrap">
+            <table className="ms-products-table excel-table">
+              <colgroup>
+                <col className="excel-col-md" />
+                <col className="excel-col-md" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-xs excel-align-right" />
+                <col className="excel-col-xs excel-align-right" />
+                <col className="excel-col-xs excel-align-right" />
+                <col className="excel-col-xs excel-align-right" />
+                <col className="excel-col-xs excel-align-right" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Batch Code</th>
                   <th>Item IDs</th>
-                  <th>Category</th>
                   <th>Product Name</th>
                   <th>Size</th>
                   <th>Colour</th>
-                  <th>Qty</th>
-                  <th>Out</th>
-                  <th>Sold</th>
-                  <th>Return</th>
-                  <th>Available</th>
+                  <th className="excel-align-right">Qty</th>
+                  <th className="excel-align-right">Out</th>
+                  <th className="excel-align-right">Sold</th>
+                  <th className="excel-align-right">Return</th>
+                  <th className="excel-align-right">Available</th>
                   <th>Barcode</th>
                   <th>Actions</th>
                 </tr>
@@ -171,7 +196,7 @@ export default function ManageStockProducts() {
               <tbody>
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={13} style={{ textAlign: "center", color: "#777" }}>
+                    <td colSpan={12} style={{ textAlign: "center", color: "#777" }}>
                       No data for {activeTab}
                     </td>
                   </tr>
@@ -180,60 +205,51 @@ export default function ManageStockProducts() {
                     <tr key={p.batchId}>
                       <td>{p.batchCode}</td>
                       <td>{p.idRange}</td>
-                      <td>{p.category}</td>
                       <td>{p.productName}</td>
                       <td>{p.size}</td>
                       <td>{p.colour}</td>
-                      <td>{p.qty}</td>
-                      <td>{p.out}</td>
-                      <td>{p.sold}</td>
-                      <td>{p.returned}</td>
+                      <td className="excel-align-right">{p.qty}</td>
+                      <td className="excel-align-right">{p.out}</td>
+                      <td className="excel-align-right">{p.sold}</td>
+                      <td className="excel-align-right">{p.returned}</td>
 
-                      <td className="ms-strong">{p.available}</td>
+                      <td className="ms-strong excel-align-right">{p.available}</td>
 
                       <td>
-                        <span
-                          className="id-range-click"
-                          onClick={() =>
-                            setIdPopup({
-                              batchCode: p.batchCode,
-                              ids: p.itemIds,
-                            })
-                          }
-                        >
-                          {p.idRange}
-                        </span>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <button
+                            className="ms-products-chip"
+                            onClick={() =>
+                              setBarcodePopup({
+                                batchCode: p.batchCode,
+                                items: p.items,
+                              })
+                            }
+                          >
+                            View Barcodes
+                          </button>
+                        </div>
                       </td>
 
-                      <td>
-                        <button
-                          className="ms-products-chip"
-                          onClick={() =>
-                            setBarcodePopup({
-                              batchCode: p.batchCode,
-                              items: p.items,
-                            })
-                          }
-                        >
-                          View Barcodes
-                        </button>
-                      </td>
-
-                      <td>
-                        <button
-                          className="ms-products-chip outline"
-                          onClick={() =>
-                            setDetailsPopup({
-                              batchCode: p.batchCode,
-                              name: p.productName,
-                              size: p.size,
-                              colour: p.colour,
-                              items: p.items,
-                            })
-                          }
-                        >
-                          Details
-                        </button>
+                      <td className="ms-actions-cell">
+                        <RowActionsMenu
+                          id={`ms-products-${p.batchId}`}
+                          openId={openMenuId}
+                          setOpenId={setOpenMenuId}
+                          actions={[
+                            {
+                              label: "Details",
+                              onClick: () =>
+                                setDetailsPopup({
+                                  batchCode: p.batchCode,
+                                  name: p.productName,
+                                  size: p.size,
+                                  colour: p.colour,
+                                  items: p.items,
+                                }),
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))
@@ -260,8 +276,11 @@ export default function ManageStockProducts() {
               </button>
             </div>
 
-            <div className="id-list-box">
-              <table className="id-table">
+            <div className="id-list-box excel-table-wrap">
+              <table className="id-table excel-table">
+                <colgroup>
+                  <col className="excel-col-lg" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Item ID</th>
@@ -308,14 +327,35 @@ export default function ManageStockProducts() {
             <div className="qr-grid">
               {barcodePopup.items.map((item) => (
                 <div key={item.Stock_id} className="qr-box">
-                  <img
-                    src={item.Qr_image_url}
-                    alt={item.Barcode_short}
-                    style={{ width: 140, height: 80, objectFit: "contain" }}
-                  />
+                  <div className="qr-box-inner">
+                    <div className="qr-id-column">
+                      <div className="qr-short-code">{item.Barcode_short}</div>
+                      <div className="qr-item-id">{item.Item_id}</div>
+                    </div>
 
-                  <p style={{ marginTop: 6 }}>{item.Barcode_short}</p>
-                  <p style={{ marginTop: 4, fontSize: 12 }}>{item.Item_id}</p>
+                    <div className="qr-code-column">
+                      <img
+                        src={item.Qr_image_url}
+                        alt={item.Barcode_short}
+                        className="qr-code-image"
+                      />
+                    </div>
+
+                    <div className="qr-metadata-column">
+                      <div className="qr-item-name">
+                        {item.Product_name || item.productName || "-"}
+                      </div>
+                      <div className="qr-item-specs">
+                        <span>{item.Size || item.size || "-"}</span>
+                        <span className="qr-spec-separator">|</span>
+                        <span>
+                          {Array.isArray(item.Purchase_order_items)
+                            ? item.Purchase_order_items[0]?.Colour || "-"
+                            : item.Purchase_order_items?.Colour || item.Colour || item.colour || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
                   <button
                     className="qr-single-btn"
@@ -366,12 +406,18 @@ export default function ManageStockProducts() {
               <b>Colour:</b> {detailsPopup.colour}
             </p>
 
-            <div className="details-list-box">
-              <table className="id-table">
+            <div className="details-list-box excel-table-wrap">
+              <table className="id-table excel-table">
+                <colgroup>
+                  <col className="excel-col-md" />
+                  <col className="excel-col-lg" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Item ID</th>
-                    <th>Category</th>
                     <th>Product Name</th>
                     <th>Size</th>
                     <th>Colour</th>
@@ -382,7 +428,6 @@ export default function ManageStockProducts() {
                   {detailsPopup.items.map((it) => (
                     <tr key={it.Stock_id}>
                       <td>{it.Item_id}</td>
-                      <td>{it.Category || "-"}</td>
                       <td>{detailsPopup.name}</td>
                       <td>{it.Size || "-"}</td>
                       <td>

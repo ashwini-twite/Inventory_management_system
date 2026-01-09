@@ -41,7 +41,6 @@ export default function ClientDetails() {
       setClients(data);
     } catch (err) {
       console.error("Fetch clients error:", err);
-      // alert("Failed to fetch clients");
     }
   }
 
@@ -100,7 +99,7 @@ export default function ClientDetails() {
   // SEARCH
   // =============================
   const handleSearch = (event) => {
-    event.preventDefault();
+    if (event) event.preventDefault();
     setSearchValue(searchInput.trim());
   };
 
@@ -144,12 +143,22 @@ export default function ClientDetails() {
   const formTitle = editingId ? "Edit Client" : "Add New Client";
 
   const filteredClients = clients.filter((client) => {
-    if (!searchValue) return true;
-    const q = searchValue.toLowerCase();
-    return (
-      (client.Client_name || "").toLowerCase().includes(q) ||
-      (client.Contact || "").toLowerCase().includes(q)
-    );
+    if (!searchValue.trim()) return true;
+
+    const parts = searchValue.toLowerCase().split(/[ ,+]+/).filter(Boolean);
+    const searchableText = [
+      client.Client_name,
+      client.Contact,
+      client.Email,
+      client.Address_location,
+      client.Address_city,
+      client.Address_state,
+      client.Country,
+      client.Postal_code,
+      client.Vat_number,
+    ].join(" ").toLowerCase();
+
+    return parts.every(p => searchableText.includes(p));
   });
 
   return (
@@ -292,9 +301,6 @@ export default function ClientDetails() {
           </div>
         </form>
       ) : (
-        // ======================
-        // LIST VIEW
-        // ======================
         <div className="client-card">
           <div className="client-card-header">
             <h3 className="client-card-title">Client List</h3>
@@ -307,40 +313,48 @@ export default function ClientDetails() {
             </button>
           </div>
 
-          <form className="client-search" onSubmit={handleSearch}>
-            <div className="client-search-field">
-              <label>Search by name or phone</label>
-              <input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Type name or phone"
-              />
+          <div className="list-header-row-standard">
+            <div className="list-filters-standard">
+              <div className="search-box-wrapper-standard">
+                <input
+                  type="text"
+                  className="search-input-standard"
+                  placeholder="Search clients (name, contact, email...)"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+                {searchInput && (
+                  <button className="search-clear-btn-standard" onClick={handleClearSearch}>&times;</button>
+                )}
+              </div>
             </div>
+          </div>
 
-            <div className="client-search-actions">
-              <button type="submit" className="client-btn primary">
-                Search
-              </button>
-              <button type="button" className="client-btn ghost" onClick={handleClearSearch}>
-                Clear
-              </button>
-            </div>
-          </form>
-
-          {/* TABLE */}
-          <div className="client-table-wrapper">
-            <table className="client-table">
+          <div className="client-table-wrapper excel-table-wrap">
+            <table className="client-table excel-table">
+              <colgroup>
+                <col className="excel-col-lg" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-md" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-sm excel-align-right" />
+                <col className="excel-col-sm" />
+                <col className="excel-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Client Name</th>
                   <th>Contact</th>
                   <th>Email</th>
-                  <th>Address Line</th>
                   <th>Location</th>
                   <th>City</th>
                   <th>State</th>
                   <th>Country</th>
-                  <th>Postal Code</th>
+                  <th className="excel-align-right">Postal Code</th>
                   <th>VAT Number</th>
                   <th>Actions</th>
                 </tr>
@@ -349,7 +363,7 @@ export default function ClientDetails() {
               <tbody>
                 {filteredClients.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="client-empty">
+                    <td colSpan="10" className="client-empty">
                       No clients found.
                     </td>
                   </tr>
@@ -359,7 +373,6 @@ export default function ClientDetails() {
                       <td>{client.Client_name}</td>
                       <td>{client.Contact}</td>
                       <td>{client.Email}</td>
-                      <td>{client.Address_line}</td>
                       <td>{client.Address_location}</td>
                       <td>{client.Address_city}</td>
                       <td>{client.Address_state}</td>

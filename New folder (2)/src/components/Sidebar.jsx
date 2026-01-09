@@ -12,9 +12,10 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "../styles/sidebar.css";
+import { useNav } from "./Layout";
 
 export default function Sidebar() {
-  const [open, setOpen] = useState(true);
+  const { isSidebarCollapsed, toggleSidebar, expandSidebar } = useNav();
 
   const [purchaseOpen, setPurchaseOpen] = useState(true);
   const [stockOpen, setStockOpen] = useState(true);
@@ -35,32 +36,34 @@ export default function Sidebar() {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setOpen(window.innerWidth > 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   const closeOnMobile = () => {
-    if (window.innerWidth <= 768) setOpen(false);
+    if (window.innerWidth <= 768) toggleSidebar();
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
-    closeOnMobile();
+    // closeOnMobile logic can be handled by toggleSidebar if we want to force collapse on logout
   };
 
   return (
-    <aside className={`sidebar ${open ? "sidebar-open" : "sidebar-collapsed"}`}>
+    <aside className={`sidebar ${!isSidebarCollapsed ? "sidebar-open" : "sidebar-collapsed"}`}>
       <div className="sidebar-header">
-        <button className="sidebar-toggle" onClick={() => setOpen(!open)}>
-          <Menu size={20} color="#fff" />
+        <div className="sidebar-brand">
+          <span className="sidebar-brand-accent" aria-hidden="true" />
+          <div className="sidebar-logo-text">
+            <span className="sidebar-logo-light">Asian</span>
+            <span className="sidebar-logo-strong">Granites</span>
+          </div>
+        </div>
+
+        <button
+          className="sidebar-toggle-btn"
+          onClick={toggleSidebar}
+          aria-label="Close Sidebar"
+        >
+          <Menu size={20} />
         </button>
-        <span className="sidebar-logo-text">Asian Granites</span>
       </div>
 
       <nav className="sidebar-nav">
@@ -69,7 +72,10 @@ export default function Sidebar() {
           className={({ isActive }) =>
             "sidebar-link" + (isActive ? " sidebar-link-active" : "")
           }
-          onClick={closeOnMobile}
+          onClick={() => {
+            closeOnMobile();
+            expandSidebar();
+          }}
         >
           <Home size={18} className="sidebar-icon" />
           <span>Home</span>
@@ -87,6 +93,7 @@ export default function Sidebar() {
               setPurchaseOpen(!purchaseOpen);
               navigate("/purchase-orders");
               closeOnMobile();
+              expandSidebar();
             }}
           >
             <FileText size={18} className="sidebar-icon" />
@@ -98,37 +105,45 @@ export default function Sidebar() {
           </button>
 
           <div
-            className={`sidebar-submenu-animated ${
-              purchaseOpen ? "submenu-open" : "submenu-closed"
-            }`}
+            className={`sidebar-submenu-animated ${purchaseOpen ? "submenu-open" : "submenu-closed"
+              }`}
           >
             <NavLink
               to="/purchase-orders/monuments"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Monuments
             </NavLink>
 
             <NavLink
               to="/purchase-orders/granite"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Granite
             </NavLink>
 
             <NavLink
               to="/purchase-orders/quartz"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Quartz
             </NavLink>
           </div>
@@ -146,6 +161,7 @@ export default function Sidebar() {
               setStockOpen(!stockOpen);
               navigate("/manage-stock");
               closeOnMobile();
+              expandSidebar();
             }}
           >
             <Boxes size={18} className="sidebar-icon" />
@@ -157,37 +173,45 @@ export default function Sidebar() {
           </button>
 
           <div
-            className={`sidebar-submenu-animated ${
-              stockOpen ? "submenu-open" : "submenu-closed"
-            }`}
+            className={`sidebar-submenu-animated ${stockOpen ? "submenu-open" : "submenu-closed"
+              }`}
           >
             <NavLink
               to="/manage-stock/products"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Products
             </NavLink>
 
             <NavLink
               to="/manage-stock/counts"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Stock Counts
             </NavLink>
 
             <NavLink
               to="/manage-stock/reserved"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Dispatch Stocks
             </NavLink>
           </div>
@@ -198,7 +222,10 @@ export default function Sidebar() {
           className={({ isActive }) =>
             "sidebar-link" + (isActive ? " sidebar-link-active" : "")
           }
-          onClick={closeOnMobile}
+          onClick={() => {
+            closeOnMobile();
+            expandSidebar();
+          }}
         >
           <Users size={18} className="sidebar-icon" />
           <span>Client Details</span>
@@ -216,6 +243,7 @@ export default function Sidebar() {
               setLogisticsOpen(!logisticsOpen);
               navigate("/logistics/scan");
               closeOnMobile();
+              expandSidebar();
             }}
           >
             <Truck size={18} className="sidebar-icon" />
@@ -227,37 +255,45 @@ export default function Sidebar() {
           </button>
 
           <div
-            className={`sidebar-submenu-animated ${
-              logisticsOpen ? "submenu-open" : "submenu-closed"
-            }`}
+            className={`sidebar-submenu-animated ${logisticsOpen ? "submenu-open" : "submenu-closed"
+              }`}
           >
             <NavLink
               to="/logistics/scan"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Scan Page
             </NavLink>
 
             <NavLink
               to="/logistics/list"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Delivery List
             </NavLink>
 
             <NavLink
               to="/logistics/returns"
-            className={({ isActive }) =>
-              "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
-            }
-            onClick={closeOnMobile}
-          >
+              className={({ isActive }) =>
+                "sidebar-sublink" + (isActive ? " sidebar-sublink-active" : "")
+              }
+              onClick={() => {
+                closeOnMobile();
+                expandSidebar();
+              }}
+            >
               - Returns
             </NavLink>
           </div>
@@ -268,7 +304,10 @@ export default function Sidebar() {
           className={({ isActive }) =>
             "sidebar-link" + (isActive ? " sidebar-link-active" : "")
           }
-          onClick={closeOnMobile}
+          onClick={() => {
+            closeOnMobile();
+            expandSidebar();
+          }}
         >
           <BarChart3 size={18} className="sidebar-icon" />
           <span>Reports</span>

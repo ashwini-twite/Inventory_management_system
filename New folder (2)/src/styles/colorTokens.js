@@ -2,28 +2,28 @@
 // Keep palette consistent across Home + Reports.
 export const categoryPalette = {
   granite: {
-    base: "#1f4f78",
-    light: "#3f6c94",
-    dark: "#143b5d",
+    base: "#1797b8",
+    light: "#D1EAF1",
+    dark: "#127893",
   },
   monuments: {
-    base: "#e64b73",
-    light: "#f58aad",
-    dark: "#c7355b",
+    base: "#faaa25",
+    light: "#FEEBCB",
+    dark: "#C8881E",
   },
   quartz: {
-    base: "#f6c14b",
-    light: "#ffd879",
-    dark: "#d9a122",
+    base: "#3960e6",
+    light: "#D7DFFB",
+    dark: "#2E4DB8",
   },
   default: {
-    base: "#6f7f9a",
-    light: "#98a9c4",
-    dark: "#4c5b76",
+    base: "#64748b",
+    light: "#e2e8f0",
+    dark: "#334155",
   },
 };
 
-export const neutralRing = "#e8ecf5";
+export const neutralRing = "#e2e8f0";
 
 export const normalizeCategory = (value) => {
   const raw = (value || "").toString().toLowerCase();
@@ -46,10 +46,10 @@ export const metricColor = (metric, category) => {
   // Dedicated status palette for "Show all" so it doesn't reuse category colors
   if (key === "default") {
     const statusPalette = {
-      available: "#2a9d8f", // teal
-      low: "#e67e22",       // burnt orange
-      sold: "#c2410c",      // brick
-      returned: "#9c27b0",  // purple
+      available: "#111827",
+      low: "#f59e0b",
+      sold: "#a9d4eb",
+      returned: "#9ca3af",
     };
     return statusPalette[metric] || palette.base;
   }

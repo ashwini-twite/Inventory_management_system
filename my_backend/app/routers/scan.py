@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from app.database import supabase
 from datetime import datetime
 
@@ -9,13 +9,13 @@ router = APIRouter(prefix="/scan", tags=["Scan & Delivery"])
 # --- Schemas ---
 
 class MarkOutSchema(BaseModel):
-    stock_id: str
+    stock_id: Any
     client_id: int
     do_no: str
     mode: str = "Scan" # "Single Scan", "Bulk Scan"
 
 class ReturnSchema(BaseModel):
-    stock_id: str
+    stock_id: Any
     reason: str
     type: str # "before" or "after"
 
@@ -179,22 +179,23 @@ def return_item(payload: ReturnSchema):
         if prod.get("Clients"):
             client_name = prod["Clients"].get("Client_name") or "-"
             
+        tag = "Return Before Invoice" if payload.type == "before" else "Return After Sale"
+
         return_entry = {
             "stock_id": prod["Stock_id"],
             "item_ids": [prod["Item_id"]],
             "product_name": prod["Product_name"],
             "size": prod["Size"],
-            "colour": colour,
             "batch_code": prod["Batch_code"],
             "client_id": prod["Client_id"],
             "client_name": client_name,
             "do_number": prod["Delivery_order_no"],
-            "reason": payload.reason,
+            "reason": f"{payload.reason} | {tag}",
             "is_bulk": False,
-            "return_type": "Return Before Invoice" if payload.type == "before" else "Return After Sale"
-            # Note: DB column 'reason' handles the type tag in original code, I'll store it in reason or there might be a tag column?
-            # Original: reason: reason || tag. So we concatenate or just use reason.
+            "colour": colour,
+            "return_date": datetime.now().date().isoformat()
         }
+
         
         # 2. Add to Return List
         supabase.table("Return_list").insert(return_entry).execute()

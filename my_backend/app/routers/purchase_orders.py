@@ -29,6 +29,8 @@ class ItemSchema(BaseModel):
     Height: Optional[str] = None
     Width: Optional[str] = None
     Thickness: Optional[str] = None
+    Sqmt: Optional[str] = None
+    sqmt: Optional[str] = None
     Colour: Optional[str] = None
     Arrival_status: str = "ordered"
     Batch_created: bool = False
@@ -39,6 +41,7 @@ class PaymentSchema(BaseModel):
     paidAmount: float
     paidDate: Optional[str] = None
     notes: Optional[str] = None
+    currency: Optional[str] = None
 
 class OrderCreateSchema(BaseModel):
     vendor: VendorSchema
@@ -67,11 +70,7 @@ def get_payment_status(paid: float, total: float) -> str:
 @router.get("/list")
 def list_purchase_orders(category: Optional[str] = None):
     # Fetch POs with nested relations
-    query = supabase.table("Purchase_orders").select("*, Vendor:Vendors(*), Items:Purchase_order_items(*), Payments:Payments(*)")
-    
-    # We can't easily filter by nested child property (Items.Category) in one Supabase call efficiently 
-    # without Postgrest syntax that might be complex. 
-    # Current frontend logic fetches ALL then filters in JS. We will do same in Python for safety/consistency.
+    query = supabase.table("Purchase_orders").select("*, Vendor:Vendors(*), Items:Purchase_order_items(*), Payments:Payments(*), Charges:purchase_order_charges(*)")
     
     response = query.order("Created_at", desc=True).execute()
     data = response.data
@@ -80,6 +79,7 @@ def list_purchase_orders(category: Optional[str] = None):
     for row in data:
         items = row.get("Items", [])
         payments = row.get("Payments", [])
+        charges = row.get("Charges", [])
         
         # Calculate totals
         total_amount = sum((float(it.get("Total_price") or 0)) for it in items)
@@ -88,10 +88,12 @@ def list_purchase_orders(category: Optional[str] = None):
         # Filter if category provided
         if category:
             cat_key = category.lower()
-            # Check if ANY item in this order matches category
             has_cat = any((it.get("Category") or "").lower() == cat_key for it in items)
             if not has_cat:
                 continue
+        
+        # Map charges back to top-level for frontend compatibility
+        charge_map = {c["charge_type"]: c["amount"] for c in charges}
         
         normalized.append({
             "Po_id": row["Po_id"],
@@ -104,14 +106,59 @@ def list_purchase_orders(category: Optional[str] = None):
             "Items": items,
             "Payments": payments,
             "TotalAmount": total_amount,
-            "PaidAmount": paid_amount
+            "PaidAmount": paid_amount,
+            "currency": row.get("currency", "INR"),
+            "Total_sqmt": row.get("Total_sqmt"),
+            "Landing_cost": row.get("Landing_cost"),
+            # Flattened charges for FE compatibility
+            "Ocean_freight": charge_map.get("Ocean Freight", 0),
+            "Insurance": charge_map.get("Insurance", 0),
+            "Fumigation": charge_map.get("Fumigation", 0),
+            "Clearance": charge_map.get("Clearance", 0)
         })
         
     return normalized
 
+@router.get("/stats")
+def get_po_stats():
+    try:
+        # Fetch all POs with their items
+        res = supabase.table("Purchase_orders").select("Po_id, Items:Purchase_order_items(Category, Arrival_status)").execute()
+        orders = res.data or []
+        
+        categories = ["granite", "quartz", "monuments"]
+        stats = {cat: {"total": 0, "pending": 0, "completed": 0} for cat in categories}
+        
+        for order in orders:
+            items = order.get("Items", [])
+            # Categorize items in this order
+            order_cats = set((it.get("Category") or "").lower() for it in items)
+            
+            for cat in categories:
+                cat_items = [it for it in items if (it.get("Category") or "").lower() == cat]
+                if not cat_items:
+                    continue
+                
+                # If this order contains items of this category, it counts towards Total
+                stats[cat]["total"] += 1
+                
+                # Check status specifically for items in this category within this order
+                is_completed = all(it.get("Arrival_status") == "Arrived" for it in cat_items)
+                
+                if is_completed:
+                    stats[cat]["completed"] += 1
+                else:
+                    stats[cat]["pending"] += 1
+                    
+        return stats
+    except Exception as e:
+        print("PO Stats Error:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/")
 def create_purchase_order(payload: OrderCreateSchema):
     try:
+        print("PO currency received:", payload.poDetails.get("currency")) 
         # 1. Vendor
         vendor_name = payload.vendor.Vendor_name.strip()
         vendor_id = None
@@ -139,75 +186,142 @@ def create_purchase_order(payload: OrderCreateSchema):
         if not vendor_id:
             raise HTTPException(status_code=400, detail="Vendor ID could not be determined")
             
-        # 2. Purchase Order
+        # 2. Purchase Order (Duplicate Invoice Check)
+        invoice_no = payload.poDetails.get("Po_invoice_no")
+        if not invoice_no:
+            invoice_no = f"INV-{int(datetime.now().timestamp()*1000)}"
+        else:
+            # Check for existing
+            existing_po = supabase.table("Purchase_orders").select("Po_id").eq("Po_invoice_no", invoice_no).execute()
+            if existing_po.data:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="this invoice number already exist ..enter correct invoice number"
+                )
+            
         po_data = {
-            "Po_invoice_no": payload.poDetails.get("Po_invoice_no") or f"INV-{int(datetime.now().timestamp()*1000)}",
+            "Po_invoice_no": invoice_no,
             "Po_date": payload.poDetails.get("Po_date"),
             "Notes": payload.poDetails.get("Notes"),
-            "Vendor_id": vendor_id
+            "Vendor_id": vendor_id,
+            "currency": payload.poDetails.get("currency", "INR"),
+            "Total_sqmt": payload.poDetails.get("Total_sqmt"),
+            "Landing_cost": payload.poDetails.get("Landing_cost"),
         }
         po_res = supabase.table("Purchase_orders").insert(po_data).execute()
         if not po_res.data:
-             raise HTTPException(status_code=500, detail="Failed to create Purchase Order")
-        
+             print("PO Insert Error Detail:", po_res)
+             raise HTTPException(status_code=500, detail="Failed to create Purchase Order - likely database constraint or connection issue.")
         po_id = po_res.data[0]["Po_id"]
+
+        # 2b. Charges (Sync: Delete existing and re-insert)
+        supabase.table("purchase_order_charges").delete().eq("po_id", po_id).execute()
         
-        # 3. Items
-        items_to_insert = []
-        for it in payload.items:
-            items_to_insert.append({
-                "Po_id": po_id,
-                "Item_name": it.Item_name,
-                "Category": it.Category,
-                "Quantity_ordered": it.Quantity_ordered,
-                "Unit_price": it.Unit_price,
-                "Total_price": it.Total_price,
-                "Height": it.Height,
-                "Width": it.Width,
-                "Thickness": it.Thickness,
-                "Colour": it.Colour,
-                "Arrival_status": "ordered",
-                "Batch_created": False,
-                "Batch_code": None,
-                "Edit_count": 0
-            })
+        currency = payload.poDetails.get("currency", "INR")
+        charges_data = [
+            {"po_id": po_id, "charge_type": "Ocean Freight", "amount": payload.poDetails.get("Ocean_freight") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Insurance", "amount": payload.poDetails.get("Insurance") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Fumigation", "amount": payload.poDetails.get("Fumigation") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Clearance", "amount": payload.poDetails.get("Clearance") or 0, "currency": currency},
+        ]
+        supabase.table("purchase_order_charges").insert(charges_data).execute()
+        
+        # 3. Items (Sync: Delete and re-insert if no batches created)
+        existing_items = supabase.table("Purchase_order_items").select("Batch_created").eq("Po_id", po_id).execute()
+        can_clean_items = not any(it.get("Batch_created") for it in existing_items.data)
+        
+        if can_clean_items:
+            supabase.table("Purchase_order_items").delete().eq("Po_id", po_id).execute()
             
-        if items_to_insert:
-            supabase.table("Purchase_order_items").insert(items_to_insert).execute()
-            
-        # 4. Payment
+            items_to_insert = []
+            for it in payload.items:
+                items_to_insert.append({
+                    "Po_id": po_id,
+                    "Item_name": it.Item_name,
+                    "Category": it.Category,
+                    "Quantity_ordered": it.Quantity_ordered,
+                    "Unit_price": it.Unit_price,
+                    "Total_price": it.Total_price,
+                    "Height": it.Height,
+                    "Width": it.Width,
+                    "Thickness": it.Thickness,
+                    "sqmt": it.Sqmt or (it.sqmt if hasattr(it, 'sqmt') else None),
+                    "Colour": it.Colour,
+                    "Arrival_status": "ordered",
+                    "Batch_created": False,
+                    "Batch_code": None,
+                    "Edit_count": 0,
+                    "currency": payload.poDetails.get("currency")
+                })
+                
+            if items_to_insert:
+                supabase.table("Purchase_order_items").insert(items_to_insert).execute()
+        
+        # 4. Payment (Prevent duplicates on retry)
         paid_val = 0
-        total_val = sum(x["Total_price"] for x in items_to_insert)
+        items_total = sum(float(x.Total_price or 0) for x in payload.items)
+        charges_total = sum(float(x["amount"]) for x in charges_data)
+        grand_total = items_total + charges_total
         
         if payload.payment and payload.payment.paidAmount > 0:
             paid_val = payload.payment.paidAmount
-            supabase.table("Payments").insert({
-                "Po_id": po_id,
-                "Amount": paid_val,
-                "Payment_date": payload.payment.paidDate,
-                "Notes": payload.payment.notes
-            }).execute()
+            # Check for existing identical payment
+            existing_pmt = supabase.table("Payments") \
+                .select("*") \
+                .eq("Po_id", po_id) \
+                .eq("Amount", paid_val) \
+                .eq("Payment_date", payload.payment.paidDate) \
+                .execute()
+            
+            if not existing_pmt.data:
+                supabase.table("Payments").insert({
+                    "Po_id": po_id,
+                    "Amount": paid_val,
+                    "Payment_date": payload.payment.paidDate,
+                    "Notes": payload.payment.notes,
+                    "currency": payload.payment.currency or payload.poDetails.get("currency", "INR")
+                }).execute()
+            else:
+                print("Payment already exists, skipping insert.")
+            
+        # Re-calculate paid_amount (since there might be other payments)
+        all_pmts = supabase.table("Payments").select("Amount").eq("Po_id", po_id).execute()
+        total_paid_so_far = sum(float(p["Amount"] or 0) for p in all_pmts.data)
             
         # Update Status
-        status = get_payment_status(paid_val, total_val)
+        status = get_payment_status(total_paid_so_far, grand_total)
         supabase.table("Purchase_orders").update({"Status": status}).eq("Po_id", po_id).execute()
         
         return {"success": True, "Po_id": po_id}
         
     except Exception as e:
+        import traceback
         print("Create PO Error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Server application error: {str(e)}")
 
 @router.put("/{po_id}")
 def update_purchase_order(po_id: int, payload: OrderUpdateSchema):
     try:
         # 1. Get existing order
-        existing = supabase.table("Purchase_orders").select("*, Vendor(*), Items:Purchase_order_items(*)").eq("Po_id", po_id).execute()
+        existing = supabase.table("Purchase_orders").select("*, Vendors(*), Items:Purchase_order_items(*)").eq("Po_id", po_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Order not found")
         
         ord_data = existing.data[0]
-        
+        existing_payments = supabase.table("Payments") \
+            .select("Payment_id") \
+            .eq("Po_id", po_id) \
+            .execute()
+
+        if existing_payments.data and payload.poDetails.get("currency"):
+            # Simple check, if currency is different
+            if payload.poDetails.get("currency") != ord_data.get("currency"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot change currency after payments exist"
+                )
+
         # 2. Update Vendor
         vendor_id = ord_data.get("Vendor_id")
         if vendor_id and payload.vendor:
@@ -222,12 +336,26 @@ def update_purchase_order(po_id: int, payload: OrderUpdateSchema):
                 "Vat_number": payload.vendor.Vat_number
             }).eq("Vendor_id", vendor_id).execute()
             
-        # 3. Update PO Details
+        # 3. Update PO Details (Primary totals and basic info)
         supabase.table("Purchase_orders").update({
             "Po_invoice_no": payload.poDetails.get("Po_invoice_no"),
             "Po_date": payload.poDetails.get("Po_date"),
-            "Notes": payload.poDetails.get("Notes")
+            "Notes": payload.poDetails.get("Notes"),
+            "Total_sqmt": payload.poDetails.get("Total_sqmt"),
+            "Landing_cost": payload.poDetails.get("Landing_cost"),
         }).eq("Po_id", po_id).execute()
+
+        # 3b. Sync Charges
+        supabase.table("purchase_order_charges").delete().eq("po_id", po_id).execute()
+        
+        currency = ord_data.get("currency", "INR")
+        charges_data = [
+            {"po_id": po_id, "charge_type": "Ocean Freight", "amount": payload.poDetails.get("Ocean_freight") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Insurance", "amount": payload.poDetails.get("Insurance") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Fumigation", "amount": payload.poDetails.get("Fumigation") or 0, "currency": currency},
+            {"po_id": po_id, "charge_type": "Clearance", "amount": payload.poDetails.get("Clearance") or 0, "currency": currency},
+        ]
+        supabase.table("purchase_order_charges").insert(charges_data).execute()
         
         # 4. Sync Items
         existing_items = ord_data.get("Items", [])
@@ -249,12 +377,6 @@ def update_purchase_order(po_id: int, payload: OrderUpdateSchema):
                 ex_item = existing_map.get(it.Po_item_id)
                 if not ex_item: continue
                 
-                # Check constraints
-                if ex_item.get("Batch_created"):
-                    # Check if critical fields changed
-                    # (simplified logic here vs frontend)
-                    pass
-                
                 edit_count = ex_item.get("Edit_count", 0) + 1 if ex_item.get("Batch_created") else 0
                 
                 supabase.table("Purchase_order_items").update({
@@ -266,8 +388,10 @@ def update_purchase_order(po_id: int, payload: OrderUpdateSchema):
                     "Height": it.Height,
                     "Width": it.Width,
                     "Thickness": it.Thickness,
+                    "sqmt": it.Sqmt or (it.sqmt if hasattr(it, 'sqmt') else None),
                     "Arrival_status": it.Arrival_status,
-                    "Edit_count": edit_count
+                    "Edit_count": edit_count,
+                    "currency": ord_data.get("currency", "INR")
                 }).eq("Po_item_id", it.Po_item_id).execute()
             else:
                 # Insert
@@ -281,18 +405,22 @@ def update_purchase_order(po_id: int, payload: OrderUpdateSchema):
                     "Height": it.Height,
                     "Width": it.Width,
                     "Thickness": it.Thickness,
+                    "sqmt": it.Sqmt or it.sqmt if hasattr(it, 'sqmt') else it.Sqmt,
                     "Colour": it.Colour,
                     "Arrival_status": "ordered",
                     "Batch_created": False,
                     "Batch_code": None,
-                    "Edit_count": 0
+                    "Edit_count": 0,
+                    "currency": ord_data.get("currency", "INR")
                 }).execute()
                 
         return {"success": True}
         
     except Exception as e:
+        import traceback
         print("Update PO Error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Update failed: {str(e)}")
 
 @router.post("/{po_id}/payments")
 def add_payment(po_id: int, payload: PaymentSchema):
@@ -312,44 +440,48 @@ def add_payment(po_id: int, payload: PaymentSchema):
         if paid_so_far + payload.paidAmount > total:
              raise HTTPException(status_code=400, detail=f"Payment exceeds total. Total: {total}, Paid: {paid_so_far}")
              
-        # Insert
-        supabase.table("Payments").insert({
-            "Po_id": po_id,
-            "Amount": payload.paidAmount,
-            "Payment_date": payload.paidDate,
-            "Notes": payload.notes
-        }).execute()
+        # Prevent multiple identical payments
+        existing_pmt = supabase.table("Payments") \
+            .select("*") \
+            .eq("Po_id", po_id) \
+            .eq("Amount", payload.paidAmount) \
+            .eq("Payment_date", payload.paidDate) \
+            .execute()
+        
+        if not existing_pmt.data:
+            # Insert
+            supabase.table("Payments").insert({
+                "Po_id": po_id,
+                "Amount": payload.paidAmount,
+                "Payment_date": payload.paidDate,
+                "Notes": payload.notes,
+                "currency": payload.currency or order.get("currency", "INR")
+            }).execute()
+        else:
+             print("Payment already exists in add_payment, skipping.")
         
         # Update Status
-        new_paid = paid_so_far + payload.paidAmount
+        all_pmts = supabase.table("Payments").select("Amount").eq("Po_id", po_id).execute()
+        new_paid = sum(float(p["Amount"] or 0) for p in all_pmts.data)
         status = get_payment_status(new_paid, total)
         supabase.table("Purchase_orders").update({"Status": status}).eq("Po_id", po_id).execute()
         
         return {"success": True}
         
     except Exception as e:
+        import traceback
         print("Add Payment Error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Add payment failed: {str(e)}")
 
 @router.post("/{po_id}/mark_arrived")
 def mark_all_arrived(po_id: int):
-    # This duplicates frontend logic: 
-    # 1. Generate QR (Batch/Products) 
-    # 2. Mark Products Available 
-    # 3. Mark Items Arrived
-    # Note: QR Generation is COMPLEX. For now, we will do the DB updates.
-    # We will SKIP image generation for now.
-    
     try:
         # Fetch invoice no
         po_res = supabase.table("Purchase_orders").select("Po_invoice_no").eq("Po_id", po_id).single().execute()
         invoice_no = po_res.data["Po_invoice_no"]
         
-        # Generate QR Logic (Simplified - DB Only)
-        # TODO: Implement full QR generation logic here
-        
         # Mark Products Available
-        # First get all PO Items for this PO
         items_res = supabase.table("Purchase_order_items").select("Po_item_id").eq("Po_id", po_id).execute()
         po_item_ids = [x["Po_item_id"] for x in items_res.data]
         
@@ -375,8 +507,11 @@ def get_po_products(po_id: int):
         if not ids:
             return []
             
-        # 2. Get Products
-        products = supabase.table("Products").select("Item_id, Barcode_short, Qr_image_url, Batch_code").in_("Po_item_id", ids).execute()
+        # 2. Get Products with metadata
+        products = supabase.table("Products") \
+            .select("Item_id, Barcode_short, Qr_image_url, Batch_code, Product_name, Size, Purchase_order_items(Colour)") \
+            .in_("Po_item_id", ids) \
+            .execute()
         return products.data
         
     except Exception as e:

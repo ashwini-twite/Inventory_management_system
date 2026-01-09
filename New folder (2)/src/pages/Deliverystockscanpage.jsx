@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/scanpage.css";
+import SelectMenu from "../components/SelectMenu";
 // import { supabase } from "../supabaseClient"; // REMOVED
 // import { markOut, returnBefore, returnAfter } from "../services/stockActions"; // REMOVED
 
@@ -208,11 +209,12 @@ export default function Deliverystockscanpage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stock_id: scannedProduct.Stock_id,
-          client_id: selectedClientId,
-          do_no: doNo,
-          mode: "Single Scan"
-        })
+  stock_id: String(scannedProduct.Stock_id ?? scannedProduct.stock_id),
+  client_id: Number(selectedClientId),
+  do_no: doNo,
+  mode: "Single Scan"
+})
+
       });
 
       if (!res.ok) {
@@ -247,11 +249,12 @@ export default function Deliverystockscanpage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            stock_id: item.Stock_id,
-            client_id: selectedClientId,
-            do_no: doNo,
-            mode: "Bulk Scan"
-          })
+  stock_id: String(item.Stock_id ?? item.stock_id),
+  client_id: Number(selectedClientId),
+  do_no: doNo,
+  mode: "Bulk Scan"
+})
+
         });
         if (!res.ok) console.warn("Failed to mark out item", item.Item_id);
       }
@@ -404,18 +407,26 @@ export default function Deliverystockscanpage() {
           <div className="client-card-ui">
             <h3 className="section-title">Client selection</h3>
 
-            <select
+            <SelectMenu
               className="client-select"
               value={selectedClientId || ""}
-              onChange={(e) => setSelectedClientId(Number(e.target.value))}
-            >
-              <option value="">Select Client</option>
-              {clients.map((c) => (
-                <option key={c.Client_id} value={c.Client_id}>
-                  {c.Client_name}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => {
+  if (!next) {
+    setSelectedClientId(null);
+  } else {
+    setSelectedClientId(Number(next));
+  }
+}}
+
+              options={[
+                { label: "Select Client", value: "" },
+                ...clients.map((c) => ({
+                  label: c.Client_name,
+                  value: c.Client_id,
+                })),
+              ]}
+              ariaLabel="Select client"
+            />
 
             <input
               className="do-input"
@@ -445,51 +456,70 @@ export default function Deliverystockscanpage() {
           <div className="bulk-section">
             <h3 className="section-title">Scanned products</h3>
 
-            <table className="bulk-table-ui">
-              <thead>
-                <tr>
-                  <th>Batch Code</th>
-                  <th>Item ID</th>
-                  <th>Category</th>
-                  <th>Product Name</th>
-                  <th>Size</th>
-                  <th>Colour</th>
-                  <th>Short Code</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {bulkList.map((p) => (
-                  <tr key={p.uid}>
-                    <td>{p.Batch_code}</td>
-                    <td>{p.Item_id}</td>
-                    <td>{p.Category}</td>
-                    <td>{p.Product_name}</td>
-                    <td>{p.Size}</td>
-                    <td>{p.colour}</td>
-                    <td>{p.Barcode_short}</td>
-
+            <div className="excel-table-wrap">
+              <table className="bulk-table-ui excel-table">
+                <colgroup>
+                  <col className="excel-col-md" />
+                  <col className="excel-col-md" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-lg" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Batch Code</th>
+                    <th>Item ID</th>
+                    <th>Category</th>
+                    <th>Product Name</th>
+                    <th>Size</th>
+                    <th>Colour</th>
+                    <th>Short Code</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {bulkList.map((p) => (
+                    <tr key={p.uid}>
+                      <td>{p.Batch_code}</td>
+                      <td>{p.Item_id}</td>
+                      <td>{p.Category}</td>
+                      <td>{p.Product_name}</td>
+                      <td>{p.Size}</td>
+                      <td>{p.colour}</td>
+                      <td>{p.Barcode_short}</td>
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="client-card-ui">
             <h3 className="section-title">Client selection</h3>
 
-            <select
+            <SelectMenu
               className="client-select"
               value={selectedClientId || ""}
-              onChange={(e) => setSelectedClientId(Number(e.target.value))}
-            >
-              <option value="">Select Client</option>
-              {clients.map((c) => (
-                <option key={c.Client_id} value={c.Client_id}>
-                  {c.Client_name}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => {
+  if (!next) {
+    setSelectedClientId(null);
+  } else {
+    setSelectedClientId(Number(next));
+  }
+}}
+
+              options={[
+                { label: "Select Client", value: "" },
+                ...clients.map((c) => ({
+                  label: c.Client_name,
+                  value: c.Client_id,
+                })),
+              ]}
+              ariaLabel="Select client"
+            />
 
             <input
               className="do-input"

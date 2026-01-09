@@ -2,7 +2,6 @@ import "../styles/login.css";
 import { Link, useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
-import loginImg from "../assets/loginprofile.jfif";
 import { supabase } from "../supabaseClient";
 
 export default function Login() {
@@ -42,11 +41,26 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-wrapper">
-      <div className="auth-card">
-        <div className="auth-left">
-          <h1>Welcome Back</h1>
-          <p>Manage your Inventory with ease and efficiency.</p>
+    <div className="auth-wrapper auth-wrapper--login">
+      <div className="auth-card auth-card--split auth-card--single">
+        <div className="auth-brand">
+          <div className="auth-brand__inner">
+            <span className="auth-brand__eyebrow">Asian Granites</span>
+            <h1>Asian Granites</h1>
+            <p className="auth-brand__tagline">Enterprise Inventory & Purchase Management</p>
+            <ul className="auth-brand__list">
+              <li>Real-time stock tracking</li>
+              <li>Purchase order automation</li>
+              <li>Secure enterprise access</li>
+            </ul>
+            <div className="auth-brand__glow" aria-hidden="true" />
+          </div>
+        </div>
+
+        <div className="auth-form-panel">
+          <div className="auth-form-header">
+            <h2>Welcome Back</h2>
+          </div>
 
           <form className="auth-form" onSubmit={handleLogin}>
             <div className="form-group">
@@ -69,22 +83,23 @@ export default function Login() {
               />
             </div>
 
-            <button className="btn-primary" type="submit">
+            <button className="btn-primary auth-submit" type="submit">
               Login
             </button>
           </form>
 
-          <button className="btn-google" type="button" onClick={handleGoogleLogin} disabled={googleLoading}>
+          <button
+            className="btn-google"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+          >
             <FcGoogle size={22} /> {googleLoading ? "Redirecting..." : "Continue with Google"}
           </button>
 
           <p className="redirect-text">
             Don&apos;t have an account? <Link to="/signup">Sign Up</Link>
           </p>
-        </div>
-
-        <div className="auth-right">
-          <img src={loginImg} alt="Warehouse team" />
         </div>
       </div>
     </div>

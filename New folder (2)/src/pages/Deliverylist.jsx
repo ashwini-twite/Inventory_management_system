@@ -1,6 +1,8 @@
 ﻿
 import React, { useEffect, useState } from "react";
 import "../styles/deliveryList.css";
+import CategoryPills from "../components/CategoryPills";
+import RowActionsMenu from "../components/RowActionsMenu";
 // import { supabase } from "../supabaseClient"; // REMOVED
 // import { returnBefore, returnAfter, undoSale } from "../services/stockActions"; // REMOVED
 
@@ -12,11 +14,12 @@ export default function Deliverylist() {
   const [loading, setLoading] = useState(false);
 
   const [searchDraft, setSearchDraft] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   const [viewPopup, setViewPopup] = useState(null);
   const [undoPopup, setUndoPopup] = useState(null);
   const [undoReason, setUndoReason] = useState("");
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   /* ---------------------------------------------------------
       FETCH DELIVERY LIST - Items currently OUT or SOLD
@@ -60,19 +63,24 @@ export default function Deliverylist() {
         }
       });
 
-      // Search filter
+      // Search filter & Date Filter
       let visible = finalGroups;
-      if (searchTerm.trim()) {
-        const lower = searchTerm.toLowerCase();
-        visible = visible.filter((g) =>
-          g.do?.toLowerCase().includes(lower) ||
-          g.client?.toLowerCase().includes(lower) ||
-          g.items.some((it) =>
-            `${it.itemId} ${it.product} ${it.batch} ${it.status} ${it.colour}${it.size}`
-              .toLowerCase()
-              .includes(lower)
-          )
-        );
+
+      if (dateFilter) {
+        visible = visible.filter(g => g.date === dateFilter);
+      }
+
+      if (searchDraft.trim()) {
+        const parts = searchDraft.toLowerCase().split(/[ ,+]+/).filter(Boolean);
+        visible = visible.filter((g) => {
+          const itemText = g.items.map(it =>
+            `${it.itemId} ${it.product} ${it.batch} ${it.status} ${it.colour} ${it.size}`
+          ).join(" ");
+
+          const searchableText = `${g.do} ${g.client} ${g.date} ${itemText}`.toLowerCase();
+
+          return parts.every(p => searchableText.includes(p));
+        });
       }
 
       setDeliveries(visible);
@@ -100,7 +108,7 @@ export default function Deliverylist() {
     window.addEventListener("stock-updated", handler);
 
     return () => window.removeEventListener("stock-updated", handler);
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, searchDraft, dateFilter]);
 
   /* ---------------------------------------------------------
       RETURN ITEM
@@ -117,7 +125,7 @@ export default function Deliverylist() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stock_id: stockId,
+          stock_id: String(stockId),
           reason: reason,
           type: type
         })
@@ -125,6 +133,8 @@ export default function Deliverylist() {
 
       if (!res.ok) throw new Error("Return failed");
 
+      alert("Item returned successfully");
+      setViewPopup(null);
       fetchDeliveries();
     } catch (err) {
       console.error("Return error:", err);
@@ -163,102 +173,113 @@ export default function Deliverylist() {
   return (
     <div className="delivery-list-page">
       {/* CATEGORY TABS */}
-      <div className="category-tabs">
-        {["Monuments", "Granite", "Quartz"].map((cat) => (
-          <button
-            key={cat}
-            className={`category-tab ${selectedCategory === cat ? "active-category" : ""
-              }`}
-            onClick={() => setSelectedCategory(cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      <CategoryPills value={selectedCategory} onChange={setSelectedCategory} className="category-tabs" />
 
-      {/* SEARCH */}
-      <form onSubmit={handleSearch} className="delivery-search-row">
-        <input
-          type="search"
-          className="delivery-search-input-modern"
-          placeholder="Search deliveries (DO, client, date, items...)"
-          value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
-        />
-        <button className="action-button" type="submit">
-          Search
-        </button>
-        <button
-          className="action-button"
-          type="button"
-          onClick={clearSearch}
-          style={{ background: "#f3f4f6", color: "#111" }}
-        >
-          Clear
-        </button>
-      </form>
+      {/* SEARCH & FILTERS */}
+      <div className="list-header-row-standard">
+        <h3 className="table-title">Delivery List - {selectedCategory}</h3>
+
+        <div className="list-filters-standard">
+          <div className="search-box-wrapper-standard">
+            <input
+              type="text"
+              className="search-input-standard"
+              placeholder="Search deliveries (DO, client, items...)"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+            />
+            {searchDraft && (
+              <button className="search-clear-btn-standard" onClick={() => setSearchDraft("")}>&times;</button>
+            )}
+          </div>
+
+          <div className="date-filter-wrapper-standard">
+            <label>Filter by Date:</label>
+            <input
+              type="date"
+              className="date-filter-standard"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            />
+            {dateFilter && (
+              <button className="search-clear-btn-standard" onClick={() => setDateFilter("")}>&times;</button>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* TABLE */}
       <div className="card-table-container">
-        <h3 className="table-title">Delivery List - {selectedCategory}</h3>
 
         {loading ? (
           <p>Loading...</p>
         ) : (
-          <table className="card-table">
-            <thead>
-              <tr>
-                <th>DO Number</th>
-                <th>Client</th>
-                <th>Date</th>
-                <th>Items Count</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {deliveries.length === 0 ? (
+          <div className="excel-table-wrap">
+            <table className="card-table excel-table">
+              <colgroup>
+                <col className="excel-col-md" />
+                <col className="excel-col-lg" />
+                <col className="excel-col-sm excel-align-center" />
+                <col className="excel-col-sm excel-align-right" />
+                <col className="excel-col-actions" />
+              </colgroup>
+              <thead>
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center" }}>
-                    No deliveries found.
-                  </td>
+                  <th>DO Number</th>
+                  <th>Client</th>
+                  <th className="excel-align-center">Date</th>
+                  <th className="excel-align-right">Items Count</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                deliveries.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.do}</td>
-                    <td>{row.client}</td>
-                    <td>{row.date}</td>
-                    <td>{row.items.length}</td>
+              </thead>
 
-                    <td>
-                      <button
-                        className="action-button"
-                        onClick={() => setViewPopup(row)}
-                      >
-                        View
-                      </button>
-
-                      {row.items.some((x) => x.status === "Sold") && (
-                        <button
-                          className="action-button"
-                          onClick={() =>
-                            setUndoPopup({
-                              stockId: row.items[0].stockId,
-                              client: row.client,
-                              do: row.do,
-                            })
-                          }
-                        >
-                          Undo
-                        </button>
-                      )}
+              <tbody>
+                {deliveries.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: "center" }}>
+                      No deliveries found.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  deliveries.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.do}</td>
+                      <td>{row.client}</td>
+                      <td className="excel-align-center">{row.date}</td>
+                      <td className="excel-align-right">{row.items.length}</td>
+
+                      <td className="delivery-actions-cell">
+                        <RowActionsMenu
+                          id={`delivery-${index}`}
+                          openId={openMenuId}
+                          setOpenId={setOpenMenuId}
+                          actions={[
+                            {
+                              label: "View",
+                              onClick: () => setViewPopup(row),
+                            },
+                            ...(row.items.some((x) => x.status === "Sold")
+                              ? [
+                                {
+                                  label: "Undo",
+                                  onClick: () =>
+                                    setUndoPopup({
+                                      stockId: row.items[0].stockId,
+                                      client: row.client,
+                                      do: row.do,
+                                    }),
+                                },
+                              ]
+                              : []),
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -279,43 +300,55 @@ export default function Deliverylist() {
             </p>
 
             <h4>Items</h4>
-            <table className="items-table">
-              <thead>
-                <tr>
-                  <th>Batch Code</th>
-                  <th>Item ID</th>
-                  <th>Category</th>
-                  <th>Product Name</th>
-                  <th>Size</th>
-                  <th>Colour</th>
-                  <th>Status</th>
-                  <th>Return</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {viewPopup.items.map((x, i) => (
-                  <tr key={i}>
-                    <td>{x.batch}</td>
-                    <td>{x.itemId}</td>
-                    <td>{x.category || "-"}</td>
-                    <td>{x.product}</td>
-                    <td>{x.size}</td>
-                    <td>{x.colour}</td>
-                    <td>{x.status}</td>
-
-                    <td>
-                      <button
-                        className="action-button"
-                        onClick={() => handleReturn(x.stockId, x.status)}
-                      >
-                        Return
-                      </button>
-                    </td>
+            <div className="excel-table-wrap">
+              <table className="items-table excel-table">
+                <colgroup>
+                  <col className="excel-col-md" />
+                  <col className="excel-col-md" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-lg" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-sm" />
+                  <col className="excel-col-actions" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Batch Code</th>
+                    <th>Item ID</th>
+                    <th>Category</th>
+                    <th>Product Name</th>
+                    <th>Size</th>
+                    <th>Colour</th>
+                    <th>Status</th>
+                    <th>Return</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {viewPopup.items.map((x, i) => (
+                    <tr key={i}>
+                      <td>{x.batch}</td>
+                      <td>{x.itemId}</td>
+                      <td>{x.category || "-"}</td>
+                      <td>{x.product}</td>
+                      <td>{x.size}</td>
+                      <td>{x.colour}</td>
+                      <td>{x.status}</td>
+
+                      <td>
+                        <button
+                          className="action-button"
+                          onClick={() => handleReturn(x.stockId, x.status)}
+                        >
+                          Return
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <button className="close-btn" onClick={() => setViewPopup(null)}>
               Close

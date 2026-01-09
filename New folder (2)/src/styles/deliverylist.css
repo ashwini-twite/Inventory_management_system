@@ -28,15 +28,16 @@
 .category-tab {
   padding: 8px 16px;
   border-radius: 20px;
-  background: #e9edf5;
+  background: #f1f5f9;
   border: none;
   cursor: pointer;
   font-size: 14px;
 }
 
 .active-category {
-  background: #4f46e5;
+  background: var(--brand-gradient);
   color: #fff;
+  box-shadow: var(--brand-glow);
 }
 
 /* CARD TABLE WRAPPER */
@@ -76,6 +77,10 @@
   color: #222;
   border-bottom: 1px solid #f3f3f3;
   font-size: 14px;
+}
+
+.delivery-actions-cell {
+  text-align: center;
 }
 
 .action-button {
@@ -133,13 +138,32 @@
 }
 
 .close-btn {
-  background: #e5e7eb;
+  background: #f1f5f9;
 }
 
 .confirm-btn {
-  background: #4f46e5;
+  background: var(--brand-gradient);
   color: #fff;
   margin-left: 10px;
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.4);
+}
+
+.confirm-btn:active {
+  transform: translateY(0);
+}
+
+.confirm-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
 }
 
 .undo-options {
@@ -168,7 +192,7 @@
   display: flex;
   align-items: center;
   background: #fff;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 25px;
   padding: 6px 14px;
   width: 180px;
@@ -178,7 +202,7 @@
 
 .delivery-search-box:hover {
   box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  border-color: #bbb;
+  border-color: #e5e7eb;
 }
 
 /* Search icon */
@@ -186,7 +210,7 @@
   position: absolute;
   left: 12px;
   font-size: 16px;
-  color: #555;
+  color: var(--text-muted);
   pointer-events: none;
 }
 
@@ -194,19 +218,19 @@
 .delivery-search-input-modern {
   width: 100%;
   padding: 10px 12px;
-  border: 1.5px solid #3b82f6;
+  border: 1.5px solid rgba(37, 99, 235, 0.35);
   border-radius: 10px;
   outline: none;
   font-size: 14px;
-  background: #eef4ff;
+  background: #fff;
   color: #0f172a;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.12);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .delivery-search-input-modern:focus {
   border-color: #2563eb;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(30, 64, 175, 0.2);
 }
 
 .delivery-search-input-modern::placeholder {

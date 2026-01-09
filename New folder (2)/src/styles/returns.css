@@ -4,8 +4,8 @@
   max-width: var(--content-max-width);
   margin: 0 auto;
   padding: clamp(1rem, 3vw, 1.75rem);
-  font-family: Inter, sans-serif;
-  background: #f7f8fc;
+  font-family: "Sora", "Segoe UI", sans-serif;
+  background: #f8fafc;
 }
 
 /* TOP CATEGORY TABS */
@@ -21,8 +21,8 @@
   border: none;
   font-size: 16px;
   cursor: pointer;
-  background: #e4e6eb;
-  color: #333;
+  background: #f1f5f9;
+  color: var(--text-main);
   transition: 0.2s ease;
 }
 
@@ -31,8 +31,9 @@
 }
 
 .category-tab.active-category {
-  background: #4a47e6;
+  background: var(--brand-gradient);
   color: #fff;
+  box-shadow: var(--brand-glow);
 }
 
 /* FILTER BAR */
@@ -49,7 +50,7 @@
 .filter-date {
   width: 180px;
   padding: 10px 12px;
-  border: 1px solid #dfe3e8;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   background: #fff;
   font-size: 14px;
@@ -59,14 +60,14 @@
 .returns-search-input {
   width: 320px;
   max-width: 100%;
-  background: #eef4ff;
-  border-color: #3b82f6;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.12);
+  background: #fff;
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.12);
 }
 
 .returns-search-input:focus {
   border-color: #2563eb;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(30, 64, 175, 0.2);
 }
 
 .clear-btn {
@@ -77,7 +78,7 @@
 .filter-input:focus,
 .filter-select:focus,
 .filter-date:focus {
-  border-color: #4a47e6;
+  border-color: #2563eb;
 }
 
 /* MAIN CARD TABLE */
@@ -104,43 +105,59 @@
 }
 
 .returns-table thead {
-  background: #f2f3f7;
+  background: #f8fafc;
 }
 
 .returns-table th {
   text-align: left;
   padding: 12px;
   font-size: 14px;
-  color: #333;
+  color: var(--text-muted);
 }
 
 .returns-table td {
   padding: 14px 12px;
   border-bottom: 1px solid #f1f1f1;
   font-size: 14px;
-  color: #444;
+  color: #334155;
+}
+
+.returns-actions-cell {
+  text-align: center;
 }
 
 .no-data {
   text-align: center;
-  color: #777;
+  color: var(--text-muted);
   padding: 30px 0;
   font-size: 15px;
 }
 
 /* ACTION BUTTON */
 .view-btn {
-  background: #4a47e6;
-  color: white;
-  padding: 6px 14px;
-  border-radius: 6px;
+  background: var(--brand-gradient);
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
-  transition: 0.2s ease;
+  font-weight: 600;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
 }
 
 .view-btn:hover {
-  background: #3533c5;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.4);
+}
+
+.view-btn:active {
+  transform: translateY(0);
+}
+
+.view-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
 }
 
 /* POPUP BACKDROP */

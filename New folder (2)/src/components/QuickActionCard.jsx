@@ -14,7 +14,7 @@ export default function QuickActionCard({ label, Icon, path }) {
   return (
     <button className="quick-card" onClick={handleClick}>
       <div className="quick-icon">
-        {Icon && <Icon size={28} color="#fff" />}
+        {Icon && <Icon size={20} color="currentColor" />}
       </div>
       <span className="quick-label">{label}</span>
     </button>

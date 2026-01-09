@@ -44,7 +44,7 @@
 .date-row input[type="date"] {
   padding: 0.45rem 0.5rem;
   border-radius: 8px;
-  border: 1px solid #dfe3ec;
+  border: 1px solid var(--border-color);
 }
 
 .filter-label {
@@ -56,7 +56,7 @@
 }
 
 .stock-filter-select {
-  min-width: 200px;
+  width: 100%;
 }
 
 .filter-hint {
@@ -80,11 +80,15 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.reports-charts {
+  display: none;
+}
+
 .link-btn {
   background: none;
   border: none;
   padding: 0;
-  color: #2f67ef;
+  color: var(--accent);
   font-weight: 600;
   cursor: pointer;
 }
@@ -101,7 +105,7 @@
 
 .report-stats__row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--gap-md);
 }
 
@@ -117,52 +121,89 @@
   font-size: 0.95rem;
 }
 
-.stat-pie-card {
+.report-legend {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.4rem;
+  margin-top: 0.5rem;
+}
+
+.report-legend__item {
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  color: var(--text-main);
 }
 
-.stat-pie {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  position: relative;
+.report-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-.stat-pie::after {
-  content: "";
-  position: absolute;
-  inset: 24%;
-  border-radius: 50%;
-  background: #fff;
+.report-legend__label {
+  color: var(--text-main);
 }
 
-.stat-pie__center {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+.stat-tooltip {
+  position: fixed;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  z-index: 50;
+  transform: translate(-50%, -120%);
+  opacity: 0;
+  animation: tooltipFade 150ms ease forwards;
 }
 
-.stat-pie__percent {
-  font-size: 0.85rem;
+.stat-tooltip__title {
+  font-weight: 700;
+}
+
+.stat-tooltip__value {
   color: var(--text-muted);
+  margin-top: 2px;
 }
 
-.stat-pie__value {
+@keyframes tooltipFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -110%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -120%);
+  }
+}
+
+.donuts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.donut-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.donut-title {
   font-weight: 700;
   color: var(--text-main);
 }
 
-.stat-pie__value-text {
-  margin-top: 6px;
-  font-weight: 700;
-  color: var(--text-main);
+.donut-chart-box {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
 }
 
 .report-card__header {
@@ -196,17 +237,11 @@
   align-items: center;
 }
 
-.report-card__filter select {
-  min-width: 170px;
-  padding: 0.55rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid #d5d9e4;
-  background: #fff;
-  font-size: 1rem;
+.report-filter-select {
+  min-width: 200px;
 }
 
 .report-pagination {
-  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -227,21 +262,34 @@
 
 .report-page-buttons button {
   padding: 6px 10px;
-  border: 1px solid #d7dce7;
-  background: #f8faff;
+  border: 1px solid var(--border-color);
+  background: var(--card-soft-bg);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .report-page-buttons button.active {
-  background: #2f67ef;
+  background: var(--brand-gradient);
   color: #fff;
-  border-color: #2f67ef;
+  border-color: transparent;
+  box-shadow: var(--brand-glow);
 }
 
 .report-page-buttons button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.report-card__footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  background: #ffffff;
+  border-radius: 0 0 18px 18px;
+}
+
+.report-page-buttons button:not(.active):hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: rgba(47, 91, 214, 0.3);
 }
 
 .report-tabs {
@@ -252,8 +300,8 @@
 }
 
 .report-tab {
-  border: 1px solid #d7dce7;
-  background: #f8faff;
+  border: 1px solid var(--border-color);
+  background: var(--card-soft-bg);
   color: var(--text-main);
   border-radius: 12px;
   padding: 0.55rem 0.95rem;
@@ -268,10 +316,10 @@
 }
 
 .report-tab-active {
-  background: var(--accent);
+  background: var(--brand-gradient);
   color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 6px 14px rgba(63, 123, 255, 0.2);
+  border-color: transparent;
+  box-shadow: var(--brand-glow);
 }
 
 .status-pill {
@@ -360,7 +408,7 @@
 .report-search input {
   padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  border: 1px solid #d7dce7;
+  border: 1px solid var(--border-color);
   min-width: 220px;
 }
 
@@ -395,5 +443,16 @@
 
   .report-card__header {
     align-items: flex-start;
+  }
+
+  .report-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .report-page-buttons {
+    width: 100%;
+    justify-content: flex-end;
   }
 }

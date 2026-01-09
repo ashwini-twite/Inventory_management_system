@@ -1,13 +1,15 @@
-# Frontend
-New folder (2)/node_modules/
-New folder (2)/dist/
-New folder (2)/.env
+# Node
+node_modules/
+.vite/
+dist/
 
-# Backend
-my_backend/.env
-my_backend/__pycache__/
-my_backend/app/__pycache__/
-
-# General
-.env
+# Python
 __pycache__/
+*.pyc
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
