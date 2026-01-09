@@ -13,21 +13,27 @@ from app.routers import (
     reserved_stock,
     scan,
     returns,
-    dashboard
+    dashboard,
+    auth,
 )
 
 app = FastAPI()
 
-# ✅ CORS CONFIG (keep for safety)
+# ================================
+# ✅ CORS CONFIG
+# ================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all for testing
+    allow_origins=["*"],  # tighten later in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ================================
 # ✅ API ROUTERS
+# ================================
+app.include_router(auth.router)
 app.include_router(reports.router)
 app.include_router(purchase_orders.router)
 app.include_router(clients.router)
@@ -39,16 +45,19 @@ app.include_router(returns.router)
 app.include_router(dashboard.router)
 
 # ================================
-# ✅ SERVE REACT FRONTEND
+# ✅ SERVE REACT FRONTEND (DEPLOY)
 # ================================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# Serve React assets
-app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_DIR, "assets")), name="assets")
+# Serve React build assets
+app.mount(
+    "/assets",
+    StaticFiles(directory=os.path.join(STATIC_DIR, "assets")),
+    name="assets",
+)
 
-# Serve index.html
+# Serve React index.html
 @app.get("/")
 def serve_frontend():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))

@@ -6,7 +6,7 @@ import { generateAllQR } from "../services/qrBatchGenerator";
 import ToggleButtonGroup from "../components/ToggleButtonGroup";
 import SelectMenu from "../components/SelectMenu";
 import RowActionsMenu from "../components/RowActionsMenu";
-import { useNav } from "../components/Layout";
+import { useNav } from "../context/NavContext";
 
 const API_BASE = "http://127.0.0.1:8000";
 

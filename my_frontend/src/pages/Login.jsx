@@ -11,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
@@ -19,8 +19,24 @@ export default function Login() {
       return;
     }
 
-    localStorage.setItem("token", "loggedin");
-    navigate("/");
+    try {
+      const response = await fetch("http://localhost:8000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === "success") {
+        sessionStorage.setItem("token", data.token);
+        navigate("/");
+      } else {
+        alert(data.detail || "Invalid admin credentials");
+      }
+    } catch (err) {
+      alert("Backend connection failed. Make sure the FastAPI server is running.");
+    }
   };
 
   const handleGoogleLogin = async () => {

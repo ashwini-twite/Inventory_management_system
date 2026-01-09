@@ -176,10 +176,80 @@
     opacity: 0;
     transform: translate(-50%, -110%);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, -120%);
   }
+}
+
+/* UI Cleanup: Remove focus highlights/boxes on charts */
+.recharts-pie-sector,
+.recharts-sector,
+.recharts-surface {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.recharts-pie-sector:focus,
+.recharts-sector:focus,
+.recharts-surface:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Detailed Chart Tooltips in Reports */
+.report-chart-tooltip {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 170px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.report-chart-tooltip__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.report-chart-tooltip__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-chart-tooltip__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  gap: 12px;
+}
+
+.report-chart-tooltip__row span {
+  color: var(--text-muted);
+}
+
+.report-chart-tooltip__row strong {
+  color: var(--text-main);
+}
+
+.report-chart-tooltip__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 4px;
 }
 
 .donuts-row {
@@ -192,6 +262,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
+}
+
+.donut-card:hover {
+  z-index: 1000;
 }
 
 .donut-title {
@@ -203,7 +278,7 @@
   position: relative;
   width: 100%;
   height: 240px;
-  overflow: hidden;
+  /* overflow: hidden; -- Removed to allow tooltips to show */
 }
 
 .report-card__header {
