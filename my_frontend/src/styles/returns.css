@@ -1,0 +1,256 @@
+/* PAGE WRAPPER */
+.returns-page {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  font-family: "Sora", "Segoe UI", sans-serif;
+  background: #f8fafc;
+}
+
+/* TOP CATEGORY TABS */
+.category-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.category-tab {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  background: #f1f5f9;
+  color: var(--text-main);
+  transition: 0.2s ease;
+}
+
+.category-tab:hover {
+  opacity: 0.9;
+}
+
+.category-tab.active-category {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: var(--brand-glow);
+}
+
+/* FILTER BAR */
+.filters-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.filter-input,
+.filter-select,
+.filter-date {
+  width: 180px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.returns-search-input {
+  width: 320px;
+  max-width: 100%;
+  background: #fff;
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.12);
+}
+
+.returns-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 4px 10px rgba(30, 64, 175, 0.2);
+}
+
+.clear-btn {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.filter-input:focus,
+.filter-select:focus,
+.filter-date:focus {
+  border-color: #2563eb;
+}
+
+/* MAIN CARD TABLE */
+.returns-card {
+  background: #fff;
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.06);
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.table-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #222;
+}
+
+/* TABLE */
+.returns-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.returns-table thead {
+  background: #f8fafc;
+}
+
+.returns-table th {
+  text-align: left;
+  padding: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.returns-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f1f1f1;
+  font-size: 14px;
+  color: #334155;
+}
+
+.returns-actions-cell {
+  text-align: center;
+}
+
+.no-data {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 0;
+  font-size: 15px;
+}
+
+/* ACTION BUTTON */
+.view-btn {
+  background: var(--brand-gradient);
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+}
+
+.view-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.4);
+}
+
+.view-btn:active {
+  transform: translateY(0);
+}
+
+.view-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.22);
+}
+
+/* POPUP BACKDROP */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+/* POPUP CARD */
+.popup-card {
+  width: 800px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.close-btn {
+  padding: 8px 18px;
+  background: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ------------------------------------
+   RESPONSIVE
+------------------------------------ */
+@media (max-width: 900px) {
+  .category-tabs {
+    flex-wrap: wrap;
+  }
+
+  .returns-card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 720px) {
+  .returns-page {
+    padding: 18px 14px;
+  }
+
+  .filters-row {
+    justify-content: flex-start;
+  }
+
+  .returns-table {
+    min-width: 720px;
+  }
+
+  .popup-card {
+    width: 100%;
+    max-width: 640px;
+  }
+}
+
+@media (max-width: 540px) {
+  .category-tab {
+    width: 100%;
+    text-align: center;
+  }
+
+  .table-title {
+    font-size: 18px;
+  }
+
+  .returns-table th,
+  .returns-table td {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+
+  .filter-input,
+  .filter-select,
+  .filter-date,
+  .returns-search-input,
+  .view-btn,
+  .clear-btn {
+    width: 100%;
+  }
+}
