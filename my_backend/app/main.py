@@ -47,17 +47,21 @@ app.include_router(dashboard.router)
 # ================================
 # ✅ SERVE REACT FRONTEND (DEPLOY)
 # ================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
+# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 # Serve React build assets
-app.mount(
-    "/assets",
-    StaticFiles(directory=os.path.join(STATIC_DIR, "assets")),
-    name="assets",
-)
+# app.mount(
+#     "/assets",
+#     StaticFiles(directory=os.path.join(STATIC_DIR, "assets")),
+#     name="assets",
+# )
 
 # Serve React index.html
-@app.get("/")
-def serve_frontend():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+# @app.get("/")
+# def serve_root():
+#     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+# @app.get("/{full_path:path}")
+# def serve_frontend(full_path: str):
+#     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
