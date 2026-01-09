@@ -26,11 +26,11 @@ jobs:
       - name: Zip artifact
         run: |
           cd my_backend
-          zip -r ../app.zip .
+          zip -r app.zip .
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: inventory-test-app-55891
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F093D813D2014D8AABE268EF5384488C }}
-          package: app.zip
+          package: my_backend/app.zip
