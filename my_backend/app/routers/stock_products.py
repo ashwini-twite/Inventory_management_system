@@ -10,7 +10,7 @@ def get_stock_products(category: str):
         cat_filter = category.lower()
         
         # 1. Fetch Products
-        products_query = supabase.table("Products").select("*, Purchase_order_items(Colour)").in_("Status", ["Available", "Returned"]).execute()
+        products_query = supabase.table("Products").select("*, Purchase_order_items(Colour)").in_("Status", ["Available", "Returned", "Out", "Sold"]).execute()
         
         if not products_query.data:
             return []
