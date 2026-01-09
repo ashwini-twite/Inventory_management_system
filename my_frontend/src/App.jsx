@@ -25,6 +25,14 @@ import Deliverystockscanpage from "./pages/Deliverystockscanpage";
 import Deliverylist from "./pages/Deliverylist";
 import ReturnsPage from "./pages/ReturnsPage";  // <-- create this file
 
+const ProtectedRoute = ({ children }) => {
+  const token = sessionStorage.getItem("token");
+  if (token !== "admin-logged-in") {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 export default function App() {
   return (
     <Routes>
@@ -37,9 +45,11 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Layout>
-            <Home />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <Home />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -47,36 +57,44 @@ export default function App() {
       <Route
         path="/manage-stock"
         element={
-          <Layout>
-            <ManageStock />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ManageStock />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/manage-stock/products"
         element={
-          <Layout>
-            <ManageStockProducts />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ManageStockProducts />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/manage-stock/counts"
         element={
-          <Layout>
-            <ManageStockCounts />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ManageStockCounts />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/manage-stock/reserved"
         element={
-          <Layout>
-            <ReservedStocks />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ReservedStocks />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -84,18 +102,22 @@ export default function App() {
       <Route
         path="/purchase-orders"
         element={
-          <Layout>
-            <PurchaseOrders />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <PurchaseOrders />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/purchase-orders/:catName"
         element={
-          <Layout>
-            <CategoryInputForm />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <CategoryInputForm />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -103,9 +125,11 @@ export default function App() {
       <Route
         path="/clients"
         element={
-          <Layout>
-            <ClientDetails />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ClientDetails />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -113,9 +137,11 @@ export default function App() {
       <Route
         path="/reports"
         element={
-          <Layout>
-            <Reports />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <Reports />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
@@ -123,27 +149,33 @@ export default function App() {
       <Route
         path="/logistics/scan"
         element={
-          <Layout>
-            <Deliverystockscanpage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <Deliverystockscanpage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/logistics/list"
         element={
-          <Layout>
-            <Deliverylist />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <Deliverylist />
+            </Layout>
+          </ProtectedRoute>
         }
       />
 
       <Route
         path="/logistics/returns"
         element={
-          <Layout>
-            <ReturnsPage />   {/* Placeholder page */}
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ReturnsPage />   {/* Placeholder page */}
+            </Layout>
+          </ProtectedRoute>
         }
       />
 

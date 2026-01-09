@@ -1,32 +1,28 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import '../styles/layout.css';
-
-const NavContext = createContext();
-
-export const useNav = () => useContext(NavContext);
+import { NavProvider, useNav } from '../context/NavContext';
 
 export default function Layout({ children }) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(prev => !prev);
-  };
-
-  const expandSidebar = () => {
-    setIsSidebarCollapsed(false);
-  };
-
   return (
-    <NavContext.Provider value={{ isSidebarCollapsed, toggleSidebar, expandSidebar }}>
-      <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-hidden' : ''}`}>
-        <Sidebar />
-        <div className="app-main">
-          <Topbar />
-          <main className="app-content">{children}</main>
-        </div>
+    <NavProvider>
+      <div className="layout-content-wrapper">
+        <LayoutContent>{children}</LayoutContent>
       </div>
-    </NavContext.Provider>
+    </NavProvider>
+  );
+}
+
+function LayoutContent({ children }) {
+  const { isSidebarCollapsed } = useNav();
+  return (
+    <div className={`app-shell ${isSidebarCollapsed ? "sidebar-hidden" : ""}`}>
+      <Sidebar />
+      <div className="app-main">
+        <Topbar />
+        <main className="app-content">{children}</main>
+      </div>
+    </div>
   );
 }

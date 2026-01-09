@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Bell, Menu, ChevronDown, FileText, Boxes, Users, Truck, BarChart3, Home as HomeIcon } from "lucide-react";
 import "../styles/topbar.css";
-import { useNav } from "./Layout";
+import { useNav } from "../context/NavContext";
 
 const HorizontalNav = () => {
   const navigate = useNavigate();
@@ -53,6 +53,13 @@ const HorizontalNav = () => {
         </div>
       </div>
 
+      <button
+        className={`hnav-item ${isActive("/clients") ? "is-active" : ""}`}
+        onClick={() => handleNav("/clients")}
+      >
+        <Users size={16} /> Clients
+      </button>
+
       <div className={`hnav-dropdown ${isDropdownActive("/manage-stock") ? "is-active" : ""} ${activeDropdown === 'stock' ? 'is-open' : ''}`}>
         <button
           className="hnav-item"
@@ -66,13 +73,6 @@ const HorizontalNav = () => {
           <button onClick={() => handleNav("/manage-stock/reserved")}>Dispatch Stocks</button>
         </div>
       </div>
-
-      <button
-        className={`hnav-item ${isActive("/clients") ? "is-active" : ""}`}
-        onClick={() => handleNav("/clients")}
-      >
-        <Users size={16} /> Clients
-      </button>
 
       <div className={`hnav-dropdown ${isDropdownActive("/logistics") ? "is-active" : ""} ${activeDropdown === 'logistics' ? 'is-open' : ''}`}>
         <button
@@ -101,6 +101,7 @@ const HorizontalNav = () => {
 export default function Topbar() {
   const [showPopup, setShowPopup] = useState(false);
   const [profileImg, setProfileImg] = useState(null);
+  const [tempImgPreview, setTempImgPreview] = useState(null);
   const [now, setNow] = useState(new Date());
   const navigate = useNavigate();
   const location = useLocation();
@@ -109,7 +110,10 @@ export default function Topbar() {
   // Load saved image from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("profileImage");
-    if (saved) setProfileImg(saved);
+    if (saved) {
+      setProfileImg(saved);
+      setTempImgPreview(saved);
+    }
   }, []);
 
   useEffect(() => {
@@ -160,18 +164,34 @@ export default function Topbar() {
     return `${datePart} \u2022 ${timePart}`;
   }, [now]);
 
-  // Handle file upload
-  const handleImageUpload = (e) => {
+  // Handle file selection (preview only)
+  const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = () => {
-      setProfileImg(reader.result);
-      localStorage.setItem("profileImage", reader.result);
-      setShowPopup(false);
+      setTempImgPreview(reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSaveImage = () => {
+    setProfileImg(tempImgPreview);
+    localStorage.setItem("profileImage", tempImgPreview || "");
+    setShowPopup(false);
+  };
+
+  const handleDeleteImage = () => {
+    setProfileImg(null);
+    setTempImgPreview(null);
+    localStorage.removeItem("profileImage");
+    setShowPopup(false);
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setTempImgPreview(profileImg); // Reset preview to current saved image
   };
 
   return (
@@ -210,7 +230,7 @@ export default function Topbar() {
             className="topbar-avatar"
             onClick={() => setShowPopup(true)}
             style={{
-              backgroundImage: profileImg ? `url(${profileImg})` : "none",
+              backgroundImage: profileImg ? `url(${profileImg})` : `url('https://ui-avatars.com/api/?name=Admin&background=2f5bd6&color=fff')`,
               backgroundSize: "cover",
             }}
           ></div>
@@ -219,18 +239,42 @@ export default function Topbar() {
 
       {/* MODAL POPUP */}
       {showPopup && (
-        <div className="profile-popup-overlay" onClick={() => setShowPopup(false)}>
+        <div className="profile-popup-overlay" onClick={closePopup}>
           <div className="profile-popup" onClick={(e) => e.stopPropagation()}>
-            <h3>Upload Profile Photo</h3>
+            <h3>Manage Profile Photo</h3>
 
-            <label className="upload-btn">
-              Choose Photo
-              <input type="file" accept="image/*" onChange={handleImageUpload} />
-            </label>
+            <div className="profile-preview-wrapper">
+              <div
+                className="profile-preview-img"
+                style={{
+                  backgroundImage: tempImgPreview ? `url(${tempImgPreview})` : `url('https://ui-avatars.com/api/?name=Admin&background=2f5bd6&color=fff')`,
+                  backgroundSize: "cover",
+                }}
+              />
+            </div>
 
-            <button className="close-btn" onClick={() => setShowPopup(false)}>
-              Close
-            </button>
+            <div className="profile-actions-stack">
+              <label className="upload-btn">
+                {tempImgPreview ? "Change Photo" : "Choose Photo"}
+                <input type="file" accept="image/*" onChange={handleImageSelect} />
+              </label>
+
+              {tempImgPreview && (
+                <button className="save-btn" onClick={handleSaveImage}>
+                  Save Changes
+                </button>
+              )}
+
+              {profileImg && (
+                <button className="delete-btn" onClick={handleDeleteImage}>
+                  Delete Photo
+                </button>
+              )}
+
+              <button className="close-btn" onClick={closePopup}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

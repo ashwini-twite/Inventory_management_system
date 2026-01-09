@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import reports, purchase_orders, clients, stock_counts, stock_products, reserved_stock, scan, returns, dashboard
+from app.routers import reports, purchase_orders, clients, stock_counts, stock_products, reserved_stock, scan, returns, dashboard, auth
 
 app = FastAPI()
 
@@ -29,6 +29,7 @@ app.include_router(reserved_stock.router)
 app.include_router(scan.router)
 app.include_router(returns.router)
 app.include_router(dashboard.router)
+app.include_router(auth.router)
 
 @app.get("/")
 def home():

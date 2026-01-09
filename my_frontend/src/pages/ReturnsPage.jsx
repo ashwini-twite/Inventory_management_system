@@ -13,6 +13,7 @@ export default function ReturnsPage() {
   const [loading, setLoading] = useState(false);
 
   const [searchDraft, setSearchDraft] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
   const [viewPopup, setViewPopup] = useState(null);

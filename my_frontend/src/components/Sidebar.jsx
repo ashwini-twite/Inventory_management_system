@@ -12,7 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "../styles/sidebar.css";
-import { useNav } from "./Layout";
+import { useNav } from "../context/NavContext";
 
 export default function Sidebar() {
   const { isSidebarCollapsed, toggleSidebar, expandSidebar } = useNav();
@@ -41,7 +41,7 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     navigate("/login");
     // closeOnMobile logic can be handled by toggleSidebar if we want to force collapse on logout
   };
@@ -149,6 +149,20 @@ export default function Sidebar() {
           </div>
         </div>
 
+        <NavLink
+          to="/clients"
+          className={({ isActive }) =>
+            "sidebar-link" + (isActive ? " sidebar-link-active" : "")
+          }
+          onClick={() => {
+            closeOnMobile();
+            expandSidebar();
+          }}
+        >
+          <Users size={18} className="sidebar-icon" />
+          <span>Client Details</span>
+        </NavLink>
+
         <div className="sidebar-group">
           <button
             className={
@@ -216,20 +230,6 @@ export default function Sidebar() {
             </NavLink>
           </div>
         </div>
-
-        <NavLink
-          to="/clients"
-          className={({ isActive }) =>
-            "sidebar-link" + (isActive ? " sidebar-link-active" : "")
-          }
-          onClick={() => {
-            closeOnMobile();
-            expandSidebar();
-          }}
-        >
-          <Users size={18} className="sidebar-icon" />
-          <span>Client Details</span>
-        </NavLink>
 
         <div className="sidebar-group">
           <button

@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, Tooltip as ReTooltip, Legend as ReLegend, Responsi
 import { saveAs } from "file-saver";
 import "../styles/reports.css";
 import SelectMenu from "../components/SelectMenu";
+import Modal from "../components/Modal";
 import { categoryColor, normalizeCategory } from "../styles/colorTokens";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
@@ -579,27 +580,90 @@ export default function Reports() {
     [soldChartData]
   );
 
-  const renderPieTooltip = ({ active, payload }) => {
+  const handleChartClick = (reportKey) => {
+    setActiveReport(reportKey);
+    const tableElement = document.getElementById("report-table-section");
+    if (tableElement) {
+      tableElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const renderDistributionTooltip = ({ active, payload }) => {
     if (!active || !payload || !payload.length) return null;
     const item = payload[0];
+    const category = item.payload?.key || item.name?.toLowerCase();
     const fill = item.payload?.color || item.fill;
-    const rawValue = item.payload?.value ?? item.value ?? 0;
+
+    const catData = stockSummary.filter(
+      (r) => normalizeCategory(r.category) === normalizeCategory(category)
+    );
+    const stats = catData.reduce(
+      (acc, r) => ({
+        total: acc.total + (Number(r.totalQuantity) || 0),
+        available: acc.available + (Number(r.totalAvailable) || 0),
+        out: acc.out + (Number(r.totalOut) || 0),
+        sold: acc.sold + (Number(r.totalSold) || 0),
+        returned: acc.returned + (Number(r.totalReturned) || 0),
+      }),
+      { total: 0, available: 0, out: 0, sold: 0, returned: 0 }
+    );
+
     return (
-      <div className="chart-tooltip">
-        <div className="chart-tooltip__title">
+      <div className="report-chart-tooltip" style={{ background: "#fff", zIndex: 99999 }}>
+        <div className="report-chart-tooltip__title">
           <span className="report-legend__dot" style={{ background: fill }} />
-          {item.name}
+          {item.name} Distribution
         </div>
-        <div className="chart-tooltip__value">
-          {Number(rawValue).toLocaleString("en-IN")} units
+        <div className="report-chart-tooltip__content">
+          <div className="report-chart-tooltip__row"><span>Total:</span> <strong>{stats.total.toLocaleString("en-IN")} Units</strong></div>
+          <div className="report-chart-tooltip__row"><span>Available:</span> <strong style={{ color: '#16a34a' }}>{stats.available.toLocaleString("en-IN")} Units</strong></div>
+          <div className="report-chart-tooltip__row"><span>Out:</span> <strong style={{ color: '#dc2626' }}>{stats.out.toLocaleString("en-IN")} Units</strong></div>
+          <div className="report-chart-tooltip__row"><span>Sold:</span> <strong style={{ color: '#2563eb' }}>{stats.sold.toLocaleString("en-IN")} Units</strong></div>
+          <div className="report-chart-tooltip__row"><span>Returned:</span> <strong style={{ color: '#ea580c' }}>{stats.returned.toLocaleString("en-IN")} Units</strong></div>
         </div>
       </div>
     );
   };
 
+  const renderLowStockTooltip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    const category = item.payload?.key || item.name?.toLowerCase();
+    const fill = item.payload?.color || item.fill;
+    const count = lowStockTotals[normalizeCategory(category)] || 0;
 
+    return (
+      <div className="report-chart-tooltip">
+        <div className="report-chart-tooltip__title">
+          <span className="report-legend__dot" style={{ background: fill }} />
+          {item.name} Low Stock
+        </div>
+        <div className="report-chart-tooltip__value">
+          {count} Batches
+        </div>
+      </div>
+    );
+  };
 
+  const renderSoldTooltip = ({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0];
+    const category = item.payload?.key || item.name?.toLowerCase();
+    const fill = item.payload?.color || item.fill;
+    const count = soldTotals[normalizeCategory(category)] || 0;
 
+    return (
+      <div className="report-chart-tooltip">
+        <div className="report-chart-tooltip__title">
+          <span className="report-legend__dot" style={{ background: fill }} />
+          {item.name} Sales
+        </div>
+        <div className="report-chart-tooltip__value">
+          {count.toLocaleString("en-IN")} Units
+        </div>
+      </div>
+    );
+  };
 
 
   useEffect(() => {
@@ -984,12 +1048,14 @@ export default function Reports() {
                       nameKey="name"
                       outerRadius={90}
                       paddingAngle={2}
+                      cursor="pointer"
+                      onClick={() => handleChartClick("stock-summary")}
                     >
                       {categoryChartData.map((entry, idx) => (
                         <Cell key={`cat-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
                       ))}
                     </Pie>
-                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReTooltip content={renderDistributionTooltip} position={{ x: 260, y: 10 }} />
                     <ReLegend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1007,12 +1073,14 @@ export default function Reports() {
                       nameKey="name"
                       outerRadius={90}
                       paddingAngle={2}
+                      cursor="pointer"
+                      onClick={() => handleChartClick("low-stock")}
                     >
                       {(lowChartData).map((entry, idx) => (
                         <Cell key={`low-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
                       ))}
                     </Pie>
-                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReTooltip content={renderLowStockTooltip} offset={80} />
                     <ReLegend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1030,12 +1098,14 @@ export default function Reports() {
                       nameKey="name"
                       outerRadius={90}
                       paddingAngle={2}
+                      cursor="pointer"
+                      onClick={() => handleChartClick("sales")}
                     >
                       {(soldChartData).map((entry, idx) => (
                         <Cell key={`sold-${entry.key}-${idx}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
                       ))}
                     </Pie>
-                    <ReTooltip content={renderPieTooltip} offset={12} />
+                    <ReTooltip content={renderSoldTooltip} offset={80} />
                     <ReLegend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1045,7 +1115,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="report-tabs card">
+      <div id="report-table-section" className="report-tabs card">
         {reportsConfig.map((report) => (
           <button
             key={report.key}

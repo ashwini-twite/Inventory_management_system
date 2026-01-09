@@ -2,7 +2,7 @@
 
 :root {
   --sidebar-bg: #0b1226;
-  --sidebar-text: #f8fafc;
+  --sidebar-text: #ffffff;
   --sidebar-width: 260px;
   --page-bg: #eef1f6;
   --card-bg: #ffffff;
@@ -16,9 +16,9 @@
   --accent-strong: #2448b5;
   --accent-soft: #eef2ff;
   --accent-bright: #2f5bd6;
-  --brand-gradient: linear-gradient(135deg, #1f3b8f 0%, #2f5bd6 50%, #6a8dff 100%);
-  --brand-gradient-hover: linear-gradient(135deg, #1b3382 0%, #274fc4 50%, #5b80ff 100%);
-  --brand-glow: 0 12px 24px rgba(47, 91, 214, 0.24);
+  --brand-gradient: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #2563EB 100%);
+  --brand-gradient-hover: linear-gradient(135deg, #16143b 0%, #252361 50%, #1d4ed8 100%);
+  --brand-glow: 0 12px 24px rgba(49, 46, 129, 0.24);
   --content-max-width: 1200px;
   --gap-lg: 24px;
   --gap-md: 16px;
