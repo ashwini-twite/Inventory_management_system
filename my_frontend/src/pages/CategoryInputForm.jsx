@@ -172,10 +172,6 @@ export default function CategoryInputForm() {
   });
 
   const [orders, setOrders] = useState([]);
-  const [pendingOrders, setPendingOrders] = useState(() => {
-    const saved = localStorage.getItem(`pending_orders_${CATEGORY_KEY}`);
-    return saved ? JSON.parse(saved) : [];
-  });
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -192,69 +188,7 @@ export default function CategoryInputForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // Persistence for pending orders
-  useEffect(() => {
-    localStorage.setItem(`pending_orders_${CATEGORY_KEY}`, JSON.stringify(pendingOrders));
-  }, [pendingOrders, CATEGORY_KEY]);
 
-  // Auto-sync logic
-  useEffect(() => {
-    const syncPending = async () => {
-      if (pendingOrders.length === 0 || isSyncing.current) return;
-
-      try {
-        isSyncing.current = true;
-        console.log("Internet restored. Attempting sync...");
-
-        const remaining = [...pendingOrders];
-        const resolveIds = []; // IDs to remove from pending list
-
-        for (const po of remaining) {
-          try {
-            const res = await fetch(`${API_BASE}/purchase_orders/`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(po.payload)
-            });
-
-            if (res.ok) {
-              resolveIds.push(po.tempId);
-              console.log("Synced order:", po.tempId);
-            } else {
-              const errData = await res.json();
-              const detail = String(errData.detail || "");
-
-              if (detail.includes("getaddrinfo") || detail.includes("connection") || detail.includes("network")) {
-                console.warn("Sync paused: Backend reports network issue.");
-                break;
-              }
-
-              if (detail.includes("already exist")) {
-                console.log("Order already in DB, removing from pending:", po.tempId);
-                resolveIds.push(po.tempId);
-              }
-            }
-          } catch (e) {
-            console.warn("Sync failed for", po.tempId, e);
-            break; // Stop if network is still flaky
-          }
-        }
-
-        if (resolveIds.length > 0) {
-          setPendingOrders(prev => prev.filter(p => !resolveIds.includes(p.tempId)));
-          await fetchAllOrders();
-        }
-      } finally {
-        isSyncing.current = false;
-      }
-    };
-
-    window.addEventListener("online", syncPending);
-    // Also try once on component mount if online
-    if (navigator.onLine) syncPending();
-
-    return () => window.removeEventListener("online", syncPending);
-  }, [pendingOrders]);
 
 
   const itemsTotal = items.reduce((s, it) => s + (parseFloat(it.Total_price) || 0), 0);
@@ -316,17 +250,7 @@ export default function CategoryInputForm() {
     }
   }
 
-  const combinedOrders = [
-    ...pendingOrders.map(p => ({
-      ...p.displayData,
-      isPending: true,
-      Po_id: p.tempId,
-      Items: p.payload.items,
-      Payments: [p.payload.payment],
-      TotalAmount: p.displayData.totalAmount,
-    })),
-    ...orders
-  ].filter(o => {
+  const combinedOrders = orders.filter(o => {
     // 1. Date Filter
     if (dateFilter && o.Po_date !== dateFilter) return false;
 
@@ -536,44 +460,7 @@ export default function CategoryInputForm() {
       setView("list");
     } catch (err) {
       console.error("Save PO error:", err);
-      // Check if it's a direct network error or our custom captured network error
-      const isNetworkIssue =
-        err.name === 'TypeError' ||
-        err.name === 'NetworkError' ||
-        err.message.includes('Failed to fetch') ||
-        err.message.includes('getaddrinfo') ||
-        err.message.includes('connection');
-
-      if (isNetworkIssue) {
-        const tempId = `offline-${Date.now()}`;
-        const newPending = {
-          tempId,
-          payload: {
-            vendor: pd.vendorDraft,
-            poDetails: pd.poDraft,
-            items: pd.itemsDraft,
-            payment: {
-              paidAmount: amount,
-              paidDate: paymentDetails.paidDate,
-              notes: paymentDetails.notes,
-              currency: currency
-            }
-          },
-          displayData: {
-            Po_invoice_no: pd.poDraft.Po_invoice_no || "DRAFT",
-            Vendor: pd.vendorDraft,
-            totalAmount: pd.totalAmount,
-            Po_date: pd.poDraft.Po_date || new Date().toISOString().slice(0, 10),
-            Status: "Pending Sync"
-          }
-        };
-        setPendingOrders(prev => [newPending, ...prev]);
-        clearForm();
-        setView("list");
-        alert("No internet connection or server unavailable. Order saved locally and will sync once back online.");
-      } else {
-        alert("Failed to save order. " + err.message);
-      }
+      alert("Failed to save order. " + err.message);
     } finally {
       setLoading(false);
     }
@@ -1355,22 +1242,21 @@ export default function CategoryInputForm() {
                       const disableAddPayment = payStatus === "Full Paid";
 
                       return (
-                        <tr key={order.Po_id} className={order.isPending ? "po-row-pending" : ""}>
+                        <tr key={order.Po_id}>
                           <td
                             className="po-invoice-click"
-                            onClick={() => !order.isPending && setViewOrderId(order.Po_id)}
+                            onClick={() => setViewOrderId(order.Po_id)}
                             style={{
-                              cursor: order.isPending ? "default" : "pointer",
-                              color: order.isPending ? "#666" : "var(--accent-strong)",
+                              cursor: "pointer",
+                              color: "var(--accent-strong)",
                               fontWeight: 600,
                               display: "flex",
                               alignItems: "center",
                               gap: "8px"
                             }}
-                            title={order.isPending ? "Waiting for internet to sync..." : "View invoice"}
+                            title={"View invoice"}
                           >
                             {order.Po_invoice_no}
-                            {order.isPending && <span className="pending-badge">Pending Sync</span>}
                           </td>
                           <td>{order.Po_date || "-"}</td>
                           <td>{order.Vendor ? order.Vendor.Vendor_name : "-"}</td>
@@ -1380,41 +1266,39 @@ export default function CategoryInputForm() {
                           <td className="excel-align-right">{formatCurrency(paid, order.currency || "INR")}</td>
                           <td className="excel-align-right">{formatCurrency(balance, order.currency || "INR")}</td>
                           <td className="excel-align-right">{formatCurrency(landingCost, order.currency || "INR")}</td>
-                          <td>{order.isPending ? "Saving..." : arrival}</td>
-                          <td>{order.isPending ? "Offline" : payStatus}</td>
+                          <td>{arrival}</td>
+                          <td>{payStatus}</td>
                           <td className="po-actions-cell">
-                            {!order.isPending && (
-                              <RowActionsMenu
-                                id={`po-${order.Po_id}`}
-                                openId={openMenuId}
-                                setOpenId={setOpenMenuId}
-                                actions={[
-                                  {
-                                    label: "View",
-                                    onClick: () => setViewOrderId(order.Po_id),
-                                  },
-                                  {
-                                    label: "Edit",
-                                    onClick: () => handleEditOrder(order.Po_id),
-                                  },
-                                  {
-                                    label: qrGenerated || markArrived ? "Barcode Generated" : "Generate Barcode",
-                                    onClick: () => handleGenerateQR(order.Po_id, order.Po_invoice_no),
-                                    disabled: qrGenerated || markArrived,
-                                  },
-                                  {
-                                    label: "Print Barcode",
-                                    onClick: () => openPrintQR(order.Po_id),
-                                    disabled: !qrGenerated,
-                                  },
-                                  {
-                                    label: "Mark as Arrived",
-                                    onClick: () => markAllArrived(order.Po_id),
-                                    disabled: arrival === "All Arrived",
-                                  },
-                                ]}
-                              />
-                            )}
+                            <RowActionsMenu
+                              id={`po-${order.Po_id}`}
+                              openId={openMenuId}
+                              setOpenId={setOpenMenuId}
+                              actions={[
+                                {
+                                  label: "View",
+                                  onClick: () => setViewOrderId(order.Po_id),
+                                },
+                                {
+                                  label: "Edit",
+                                  onClick: () => handleEditOrder(order.Po_id),
+                                },
+                                {
+                                  label: qrGenerated || markArrived ? "Barcode Generated" : "Generate Barcode",
+                                  onClick: () => handleGenerateQR(order.Po_id, order.Po_invoice_no),
+                                  disabled: qrGenerated || markArrived,
+                                },
+                                {
+                                  label: "Print Barcode",
+                                  onClick: () => openPrintQR(order.Po_id),
+                                  disabled: !qrGenerated,
+                                },
+                                {
+                                  label: "Mark as Arrived",
+                                  onClick: () => markAllArrived(order.Po_id),
+                                  disabled: arrival === "All Arrived",
+                                },
+                              ]}
+                            />
                           </td>
                         </tr>
                       );

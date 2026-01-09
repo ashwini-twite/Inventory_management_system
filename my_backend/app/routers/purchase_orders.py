@@ -186,33 +186,44 @@ def create_purchase_order(payload: OrderCreateSchema):
         if not vendor_id:
             raise HTTPException(status_code=400, detail="Vendor ID could not be determined")
             
-        # 2. Purchase Order (Duplicate Invoice Check)
+        # 2. Purchase Order (Check existing or Create new)
         invoice_no = payload.poDetails.get("Po_invoice_no")
         if not invoice_no:
             invoice_no = f"INV-{int(datetime.now().timestamp()*1000)}"
-        else:
-            # Check for existing
-            existing_po = supabase.table("Purchase_orders").select("Po_id").eq("Po_invoice_no", invoice_no).execute()
-            if existing_po.data:
-                raise HTTPException(
-                    status_code=400, 
-                    detail="this invoice number already exist ..enter correct invoice number"
-                )
+        
+        # Check for existing
+        existing_po = supabase.table("Purchase_orders").select("Po_id").eq("Po_invoice_no", invoice_no).execute()
+        
+        if existing_po.data:
+            # Idempotent behavior: Use existing PO
+            po_id = existing_po.data[0]["Po_id"]
+            print(f"PO {invoice_no} already exists (ID: {po_id}). Syncing updates/items.")
             
-        po_data = {
-            "Po_invoice_no": invoice_no,
-            "Po_date": payload.poDetails.get("Po_date"),
-            "Notes": payload.poDetails.get("Notes"),
-            "Vendor_id": vendor_id,
-            "currency": payload.poDetails.get("currency", "INR"),
-            "Total_sqmt": payload.poDetails.get("Total_sqmt"),
-            "Landing_cost": payload.poDetails.get("Landing_cost"),
-        }
-        po_res = supabase.table("Purchase_orders").insert(po_data).execute()
-        if not po_res.data:
-             print("PO Insert Error Detail:", po_res)
-             raise HTTPException(status_code=500, detail="Failed to create Purchase Order - likely database constraint or connection issue.")
-        po_id = po_res.data[0]["Po_id"]
+            # Optionally update PO header details (like date, notes, etc. if they changed)
+            po_update_data = {
+                "Po_date": payload.poDetails.get("Po_date"),
+                "Notes": payload.poDetails.get("Notes"),
+                "currency": payload.poDetails.get("currency", "INR"),
+                "Total_sqmt": payload.poDetails.get("Total_sqmt"),
+                "Landing_cost": payload.poDetails.get("Landing_cost"),
+            }
+            supabase.table("Purchase_orders").update(po_update_data).eq("Po_id", po_id).execute()
+        else:
+            # Create new
+            po_data = {
+                "Po_invoice_no": invoice_no,
+                "Po_date": payload.poDetails.get("Po_date"),
+                "Notes": payload.poDetails.get("Notes"),
+                "Vendor_id": vendor_id,
+                "currency": payload.poDetails.get("currency", "INR"),
+                "Total_sqmt": payload.poDetails.get("Total_sqmt"),
+                "Landing_cost": payload.poDetails.get("Landing_cost"),
+            }
+            po_res = supabase.table("Purchase_orders").insert(po_data).execute()
+            if not po_res.data:
+                 print("PO Insert Error Detail:", po_res)
+                 raise HTTPException(status_code=500, detail="Failed to create Purchase Order - likely database constraint or connection issue.")
+            po_id = po_res.data[0]["Po_id"]
 
         # 2b. Charges (Sync: Delete existing and re-insert)
         supabase.table("purchase_order_charges").delete().eq("po_id", po_id).execute()
